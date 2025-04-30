@@ -447,12 +447,5 @@ with col2:
             mime="application/pdf",
         )
 
-# Botón para cerrar sesión en la esquina inferior derecha
-with st.sidebar:
-    if st.button("Cerrar sesión"):
-        st.session_state.is_configured = False
-        st.session_state.agent_access_key = ""
-        st.rerun()
-
 # Pie de página
 st.markdown("<div class='footer'>Asistente Digital © 2025</div>", unsafe_allow_html=True)
