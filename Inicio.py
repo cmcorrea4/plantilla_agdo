@@ -8,7 +8,7 @@ import io
 from fpdf import FPDF
 import tempfile
 
-# Configuración de la página con tema oscuro nativo (funciona en Streamlit 1.25.0 o superior)
+# Configuración de la página sin el parámetro theme (compatible con versiones anteriores)
 st.set_page_config(
     page_title="Asistente Digital",
     page_icon="🎙️",
@@ -17,9 +17,37 @@ st.set_page_config(
     menu_items=None
 )
 
-# Estilos CSS personalizados solo para elementos específicos (título, etc.)
+# Establecer tema oscuro mediante CSS personalizado para versiones anteriores
 st.markdown("""
 <style>
+    /* Tema oscuro personalizado para versiones anteriores de Streamlit */
+    body {
+        color: #fafafa;
+        background-color: #0e1117;
+    }
+    .stApp {
+        background-color: #0e1117;
+    }
+    .stTextInput>div>div>input {
+        background-color: #262730;
+        color: white;
+    }
+    .stSlider>div>div>div {
+        color: white;
+    }
+    .stSelectbox>div>div>div {
+        background-color: #262730;
+        color: white;
+    }
+    div.stButton > button:first-child {
+        background-color: #1E88E5;
+        color: white;
+    }
+    .css-1d391kg, .css-12oz5g7 {
+        background-color: #262730;
+    }
+    
+    /* Estilos personalizados para el asistente */
     .main-header {
         font-size: 2.5rem;
         color: #2196F3;
@@ -30,6 +58,7 @@ st.markdown("""
     }
     .subheader {
         font-size: 1.5rem;
+        color: #e0e0e0;
         margin-bottom: 1rem;
     }
     .audio-controls {
@@ -41,6 +70,7 @@ st.markdown("""
         position: fixed;
         bottom: 0;
         width: 100%;
+        background-color: #0e1117;
         text-align: center;
         padding: 10px;
         font-size: 0.8rem;
