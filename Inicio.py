@@ -47,18 +47,18 @@ st.markdown("""
         background-color: #262730;
     }
     
-    /* Estilos personalizados para el asistente */
+    /* Estilos personalizados para el asistente - Todos los títulos en BLANCO */
     .main-header {
         font-size: 2.5rem;
-        color: #2196F3;
+        color: #FFFFFF;
         text-align: center;
         margin-bottom: 2rem;
         font-weight: bold;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
     }
     .subheader {
         font-size: 1.5rem;
-        color: #e0e0e0;
+        color: #FFFFFF;
         margin-bottom: 1rem;
     }
     .audio-controls {
@@ -74,6 +74,13 @@ st.markdown("""
         text-align: center;
         padding: 10px;
         font-size: 0.8rem;
+    }
+    /* Asegurar que todos los títulos en la barra lateral también sean blancos */
+    .sidebar .sidebar-content h1, 
+    .sidebar .sidebar-content h2, 
+    .sidebar .sidebar-content h3,
+    .css-1outpf7 {
+        color: #FFFFFF !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -142,7 +149,7 @@ if not st.session_state.is_configured:
             # Guardar configuración en session_state
             st.session_state.agent_access_key = agent_access_key
             st.session_state.is_configured = True
-            st.success("¡Acceso correcto!")
+            st.success("Clave configurada")  # Cambio de mensaje aquí
             time.sleep(1)  # Breve pausa para mostrar el mensaje de éxito
             st.rerun()
     
