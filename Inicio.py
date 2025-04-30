@@ -14,8 +14,7 @@ st.set_page_config(
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="collapsed",
-    menu_items=None,
-    theme="dark"
+    menu_items=None
 )
 
 # Estilos CSS personalizados solo para elementos específicos (título, etc.)
