@@ -13,7 +13,8 @@ st.set_page_config(
     page_title="Asistente Digital",
     page_icon="🎙️",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
+    menu_items=None
 )
 
 # Establecer tema oscuro mediante CSS personalizado
