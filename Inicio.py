@@ -8,50 +8,17 @@ import io
 from fpdf import FPDF
 import tempfile
 
-# Configuración de la página
+# Configuración de la página con tema oscuro nativo (funciona en Streamlit 1.25.0 o superior)
 st.set_page_config(
     page_title="Asistente Digital",
     page_icon="🎙️",
     layout="wide",
     initial_sidebar_state="collapsed",
-    menu_items=None
+    menu_items=None,
+    theme="dark"
 )
 
-# Establecer tema oscuro mediante CSS personalizado
-st.markdown("""
-<style>
-    /* Tema oscuro personalizado */
-    .reportview-container {
-        background-color: #0e1117;
-        color: #fafafa;
-    }
-    .sidebar .sidebar-content {
-        background-color: #262730;
-        color: #fafafa;
-    }
-    .Widget>label {
-        color: #fafafa;
-    }
-    .st-bb {
-        background-color: #262730;
-    }
-    .st-at {
-        background-color: #0e1117;
-    }
-    .st-cb {
-        background-color: #31333F;
-    }
-    .st-cc {
-        background-color: #262730;
-        color: #fafafa;
-    }
-    .css-145kmo2 {
-        border: 1px solid #0e1117;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Estilos CSS personalizados
+# Estilos CSS personalizados solo para elementos específicos (título, etc.)
 st.markdown("""
 <style>
     .main-header {
@@ -64,32 +31,20 @@ st.markdown("""
     }
     .subheader {
         font-size: 1.5rem;
-        color: #e0e0e0;
         margin-bottom: 1rem;
-    }
-    .response-container {
-        background-color: #2b313e;
-        border-radius: 10px;
-        padding: 20px;
-        margin-top: 20px;
-    }
-    .footer {
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        background-color: #1e1e1e;
-        text-align: center;
-        padding: 10px;
-        font-size: 0.8rem;
     }
     .audio-controls {
         display: flex;
         align-items: center;
         margin-top: 10px;
     }
-    .stButton>button {
-        background-color: #1E88E5;
-        color: white;
+    .footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        text-align: center;
+        padding: 10px;
+        font-size: 0.8rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -105,12 +60,6 @@ def initialize_session_vars():
         st.session_state.agent_access_key = ""
     if "messages" not in st.session_state:
         st.session_state.messages = []
-    if "include_retrieval" not in st.session_state:
-        st.session_state.include_retrieval = False
-    if "include_functions" not in st.session_state:
-        st.session_state.include_functions = False
-    if "include_guardrails" not in st.session_state:
-        st.session_state.include_guardrails = False
 
 # Inicializar variables
 initialize_session_vars()
@@ -353,7 +302,6 @@ def query_agent(prompt, history=None):
             "stream": False
         }
         
-        
         # Enviar solicitud POST
         try:
             response = requests.post(completions_url, headers=headers, json=payload, timeout=60)
@@ -446,9 +394,6 @@ if prompt:
                 if audio_html:
                     message_data["audio_html"] = audio_html
                 st.session_state.messages.append(message_data)
-
-# Sección de opciones adicionales - Eliminando la sección que estaba en el área principal
-# st.divider()
 
 # Pie de página
 st.markdown("<div class='footer'>Asistente Digital © 2025</div>", unsafe_allow_html=True)
