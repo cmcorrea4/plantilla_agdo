@@ -56,9 +56,11 @@ st.markdown("""
 <style>
     .main-header {
         font-size: 2.5rem;
-        color: #1E88E5;
+        color: #2196F3;
         text-align: center;
         margin-bottom: 2rem;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
     }
     .subheader {
         font-size: 1.5rem;
@@ -139,7 +141,7 @@ def text_to_speech(text):
         return f"<div class='error'>Error al generar audio: {str(e)}</div>"
 
 # Título y descripción de la aplicación
-st.markdown("<h1 class='main-header'>Asistente Digital</h1>", unsafe_allow_html=True)
+st.markdown("<h1 class='main-header'>Asistente Digital Construinmuniza</h1>", unsafe_allow_html=True)
 
 # Pantalla de configuración inicial si aún no se ha configurado
 if not st.session_state.is_configured:
