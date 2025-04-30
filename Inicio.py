@@ -8,15 +8,47 @@ import io
 from fpdf import FPDF
 import tempfile
 
-# Configuración de la página con tema oscuro
+# Configuración de la página
 st.set_page_config(
     page_title="Asistente Digital",
     page_icon="🎙️",
     layout="wide",
-    initial_sidebar_state="collapsed",
-    menu_items=None,
-    theme="dark"
+    initial_sidebar_state="collapsed"
 )
+
+# Establecer tema oscuro mediante CSS personalizado
+st.markdown("""
+<style>
+    /* Tema oscuro personalizado */
+    .reportview-container {
+        background-color: #0e1117;
+        color: #fafafa;
+    }
+    .sidebar .sidebar-content {
+        background-color: #262730;
+        color: #fafafa;
+    }
+    .Widget>label {
+        color: #fafafa;
+    }
+    .st-bb {
+        background-color: #262730;
+    }
+    .st-at {
+        background-color: #0e1117;
+    }
+    .st-cb {
+        background-color: #31333F;
+    }
+    .st-cc {
+        background-color: #262730;
+        color: #fafafa;
+    }
+    .css-145kmo2 {
+        border: 1px solid #0e1117;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # Estilos CSS personalizados
 st.markdown("""
