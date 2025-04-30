@@ -172,6 +172,87 @@ if not st.session_state.is_configured:
 # Una vez configurado, mostrar la interfaz normal
 st.markdown("<p class='subheader'>Interactúa con tu asistente.</p>", unsafe_allow_html=True)
 
+# Sidebar para configuración
+st.sidebar.title("Configuración")
+
+# Mostrar información de conexión actual
+st.sidebar.success("✅ Configuración cargada")
+with st.sidebar.expander("Ver configuración actual"):
+    st.code(f"Endpoint: {st.session_state.agent_endpoint}\nClave de acceso: {'*'*10}")
+
+# Ajustes avanzados
+with st.sidebar.expander("Ajustes avanzados"):
+    temperature = st.slider("Temperatura", min_value=0.0, max_value=1.0, value=0.2, step=0.1,
+                          help="Valores más altos generan respuestas más creativas, valores más bajos generan respuestas más deterministas.")
+    
+    max_tokens = st.slider("Longitud máxima", min_value=100, max_value=2000, value=1000, step=100,
+                          help="Número máximo de tokens en la respuesta.")
+
+# Sección para probar conexión con el agente
+with st.sidebar.expander("Probar conexión"):
+    if st.button("Verificar endpoint"):
+        with st.spinner("Verificando conexión..."):
+            try:
+                agent_endpoint = st.session_state.agent_endpoint
+                agent_access_key = st.session_state.agent_access_key
+                
+                if not agent_endpoint or not agent_access_key:
+                    st.error("Falta configuración del endpoint o clave de acceso")
+                else:
+                    # Asegurarse de que el endpoint termine correctamente
+                    if not agent_endpoint.endswith("/"):
+                        agent_endpoint += "/"
+                    
+                    # Verificar si la documentación está disponible (común en estos endpoints)
+                    docs_url = f"{agent_endpoint}docs"
+                    
+                    # Preparar headers
+                    headers = {
+                        "Authorization": f"Bearer {agent_access_key}",
+                        "Content-Type": "application/json"
+                    }
+                    
+                    try:
+                        # Primero intentar verificar si hay documentación disponible
+                        response = requests.get(docs_url, timeout=10)
+                        
+                        if response.status_code < 400:
+                            st.success(f"✅ Documentación del agente accesible en: {docs_url}")
+                        
+                        # Luego intentar hacer una solicitud simple para verificar la conexión
+                        completions_url = f"{agent_endpoint}api/v1/chat/completions"
+                        test_payload = {
+                            "model": "n/a",
+                            "messages": [{"role": "user", "content": "Hello"}],
+                            "max_tokens": 5,
+                            "stream": False
+                        }
+                        
+                        response = requests.post(completions_url, headers=headers, json=test_payload, timeout=10)
+                        
+                        if response.status_code < 400:
+                            st.success(f"✅ Conexión exitosa con el endpoint del agente")
+                            with st.expander("Ver detalles de la respuesta"):
+                                try:
+                                    st.json(response.json())
+                                except:
+                                    st.code(response.text)
+                            st.info("🔍 La API está configurada correctamente y responde a las solicitudes.")
+                        else:
+                            st.error(f"❌ Error al conectar con el agente. Código: {response.status_code}")
+                            with st.expander("Ver detalles del error"):
+                                st.code(response.text)
+                    except Exception as e:
+                        st.error(f"Error de conexión: {str(e)}")
+            except Exception as e:
+                st.error(f"Error al verificar endpoint: {str(e)}")
+
+# Botón para cerrar sesión
+if st.sidebar.button("Cerrar sesión"):
+    st.session_state.is_configured = False
+    st.session_state.agent_access_key = ""
+    st.rerun()
+
 # Función para enviar consulta al agente
 def query_agent(prompt, history=None):
     try:
@@ -205,13 +286,11 @@ def query_agent(prompt, history=None):
         payload = {
             "model": "n/a",  # El modelo no es relevante para el agente
             "messages": messages,
-            "temperature": 0.2,
-            "max_tokens": 1000,
-            "stream": False,
-            "include_retrieval_info": False,
-            "include_functions_info": False,
-            "include_guardrails_info": False
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": False
         }
+        
         
         # Enviar solicitud POST
         try:
