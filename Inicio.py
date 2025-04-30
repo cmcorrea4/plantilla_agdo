@@ -247,6 +247,66 @@ with st.sidebar.expander("Probar conexión"):
             except Exception as e:
                 st.error(f"Error al verificar endpoint: {str(e)}")
 
+# Opciones de gestión de conversación
+st.sidebar.markdown("### Gestión de conversación")
+
+# Botón para limpiar conversación
+if st.sidebar.button("🗑️ Limpiar conversación"):
+    st.session_state.messages = []
+    st.rerun()
+
+# Botón para guardar conversación en PDF
+if st.sidebar.button("💾 Guardar conversación en PDF"):
+    # Crear PDF
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+    
+    # Añadir título
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, "Conversación con el Asistente", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Añadir fecha
+    from datetime import datetime
+    pdf.set_font("Arial", 'I', 10)
+    pdf.cell(200, 10, f"Generado el: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", ln=True)
+    pdf.ln(10)
+    
+    # Recuperar mensajes
+    pdf.set_font("Arial", size=12)
+    for msg in st.session_state.messages:
+        if msg["role"] == "user":
+            pdf.set_text_color(0, 0, 255)  # Azul para usuario
+            pdf.cell(200, 10, "Usuario:", ln=True)
+        else:
+            pdf.set_text_color(0, 128, 0)  # Verde para asistente
+            pdf.cell(200, 10, "Asistente:", ln=True)
+        
+        pdf.set_text_color(0, 0, 0)  # Negro para el contenido
+        
+        # Partir el texto en múltiples líneas si es necesario
+        text = msg["content"]
+        pdf.multi_cell(190, 10, text)
+        pdf.ln(5)
+    
+    # Guardar el PDF en un archivo temporal
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+        pdf_path = tmp_file.name
+        pdf.output(pdf_path)
+    
+    # Abrir y leer el archivo para la descarga
+    with open(pdf_path, "rb") as f:
+        pdf_data = f.read()
+    
+    # Botón de descarga
+    st.sidebar.download_button(
+        label="Descargar PDF",
+        data=pdf_data,
+        file_name="conversacion.pdf",
+        mime="application/pdf",
+    )
+
 # Botón para cerrar sesión
 if st.sidebar.button("Cerrar sesión"):
     st.session_state.is_configured = False
@@ -385,67 +445,8 @@ if prompt:
                     message_data["audio_html"] = audio_html
                 st.session_state.messages.append(message_data)
 
-# Sección de opciones adicionales
-st.divider()
-
-col1, col2 = st.columns(2)
-
-with col1:
-    if st.button("🗑️ Limpiar conversación"):
-        st.session_state.messages = []
-        st.rerun()
-
-with col2:
-    if st.button("💾 Guardar conversación en PDF"):
-        # Crear PDF
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
-        
-        # Añadir título
-        pdf.set_font("Arial", 'B', 16)
-        pdf.cell(200, 10, "Conversación con el Asistente", ln=True, align='C')
-        pdf.ln(10)
-        
-        # Añadir fecha
-        from datetime import datetime
-        pdf.set_font("Arial", 'I', 10)
-        pdf.cell(200, 10, f"Generado el: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", ln=True)
-        pdf.ln(10)
-        
-        # Recuperar mensajes
-        pdf.set_font("Arial", size=12)
-        for msg in st.session_state.messages:
-            if msg["role"] == "user":
-                pdf.set_text_color(0, 0, 255)  # Azul para usuario
-                pdf.cell(200, 10, "Usuario:", ln=True)
-            else:
-                pdf.set_text_color(0, 128, 0)  # Verde para asistente
-                pdf.cell(200, 10, "Asistente:", ln=True)
-            
-            pdf.set_text_color(0, 0, 0)  # Negro para el contenido
-            
-            # Partir el texto en múltiples líneas si es necesario
-            text = msg["content"]
-            pdf.multi_cell(190, 10, text)
-            pdf.ln(5)
-        
-        # Guardar el PDF en un archivo temporal
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-            pdf_path = tmp_file.name
-            pdf.output(pdf_path)
-        
-        # Abrir y leer el archivo para la descarga
-        with open(pdf_path, "rb") as f:
-            pdf_data = f.read()
-        
-        # Botón de descarga
-        st.download_button(
-            label="Descargar PDF",
-            data=pdf_data,
-            file_name="conversacion.pdf",
-            mime="application/pdf",
-        )
+# Sección de opciones adicionales - Eliminando la sección que estaba en el área principal
+# st.divider()
 
 # Pie de página
 st.markdown("<div class='footer'>Asistente Digital © 2025</div>", unsafe_allow_html=True)
