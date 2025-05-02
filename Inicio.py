@@ -170,6 +170,11 @@ st.markdown("""
             <span style="font-weight: 500; color: #BBDEFB;">¿Qué servicios presta Construinmuniza?</span>
         </li>
         <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
+            <span style="font-weight: 500; color: #BBDEFB;">¿Por qué se debe aplicar inmunizante a la madera?</span>
+        </li>
+        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
+            <span style="font-weight: 500; color: #BBDEFB;">¿Cuáles son los horarios de atención en
+        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
             <span style="font-weight: 500; color: #BBDEFB;">¿Puedes darme la disponibilidad de inventario de la referencia RE40009250?</span>
         </li>
         <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
