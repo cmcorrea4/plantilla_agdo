@@ -159,6 +159,26 @@ if not st.session_state.is_configured:
 # Una vez configurado, mostrar la interfaz normal
 st.markdown("<p class='subheader'>Interactúa con tu asistente.</p>", unsafe_allow_html=True)
 
+# Agregar ejemplos de preguntas con estilo profesional
+st.markdown("""
+<div class="example-questions">
+    <p style="font-size: 0.9rem; color: #8EBBFF; margin-bottom: 1.5rem; font-style: italic; font-family: 'Segoe UI', Arial, sans-serif;">
+        Ejemplos de preguntas que puedes hacer:
+    </p>
+    <ul style="list-style-type: none; padding-left: 0; margin-bottom: 1.5rem; font-family: 'Segoe UI', Arial, sans-serif;">
+        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
+            <span style="font-weight: 500; color: #BBDEFB;">¿Qué servicios presta Construinmuniza?</span>
+        </li>
+        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
+            <span style="font-weight: 500; color: #BBDEFB;">¿Puedes darme la disponibilidad de inventario de la referencia RE40009250?</span>
+        </li>
+        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
+            <span style="font-weight: 500; color: #BBDEFB;">¿Puedes darme el precio de PISO PARED 10X1.7X100M2 CEP en El Chagualo?</span>
+        </li>
+    </ul>
+</div>
+""", unsafe_allow_html=True)
+
 # Sidebar para configuración
 st.sidebar.title("Configuración")
 
