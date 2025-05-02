@@ -163,7 +163,7 @@ st.markdown("<p class='subheader'>Interactúa con tu asistente.</p>", unsafe_all
 st.markdown("""
 <div class="example-questions">
     <p style="font-size: 0.9rem; color: #8EBBFF; margin-bottom: 1.5rem; font-style: italic; font-family: 'Segoe UI', Arial, sans-serif;">
-        Ejemplos de preguntas que puedes hacer:
+        Ejemplos de preguntas que puedes hacerle:
     </p>
     <ul style="list-style-type: none; padding-left: 0; margin-bottom: 1.5rem; font-family: 'Segoe UI', Arial, sans-serif;">
         <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
