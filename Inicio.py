@@ -11,7 +11,7 @@ import tempfile
 # Configuración de la página sin el parámetro theme (compatible con versiones anteriores)
 st.set_page_config(
     page_title="Asistente Digital",
-    page_icon="🎙️",
+    page_icon=":evergreen_tree:",
     layout="wide",
     initial_sidebar_state="collapsed",
     menu_items=None
