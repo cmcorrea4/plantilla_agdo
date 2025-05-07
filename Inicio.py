@@ -39,10 +39,10 @@ st.markdown("""
         background-color: #262730;
         color: white;
     }
-    div.stButton > button:first-child {
-        background-color: #1E88E5;
-        color: white;
-    }
+    #div.stButton > button:first-child {
+    #    background-color: #1E88E5;
+    #    color: white;
+    #}
     .css-1d391kg, .css-12oz5g7 {
         background-color: #262730;
     }
