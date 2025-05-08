@@ -424,7 +424,7 @@ if prompt:
     
     # Mostrar indicador de carga mientras se procesa
     with st.chat_message("assistant"):
-        with st.spinner("Pensando..."):
+        with st.spinner("Buscando..."):
             # Enviar consulta al agente
             response = query_agent(prompt, api_history)
             
