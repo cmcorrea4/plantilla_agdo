@@ -226,146 +226,163 @@ def extract_cotization_data(response_text):
     
     return cotization_data
 
-ar fuente
-        pdf.set_font("Arial", size=8)
+# Función para generar PDF de cotización
+def generate_cotization_pdf(cotization_data):
+    """Genera un PDF de cotización similar al formato de la imagen"""
+    try:
+        # Crear PDF con orientación vertical y márgenes ajustados
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=10)
         
-        # Encabezado de la empresa
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 8, "Construcciones Inmunizadas De Colombia", ln=True, align='C')
+        # Encabezado de la empresa - más compacto
+        pdf.set_font("Arial", 'B', 11)
+        pdf.cell(0, 6, "Construcciones Inmunizadas De Colombia", ln=True, align='C')
         pdf.set_font("Arial", size=8)
         pdf.cell(0, 4, "Nit: 900297110", ln=True, align='C')
         pdf.cell(0, 4, "Cra 58 64 10", ln=True, align='C')
         pdf.cell(0, 4, "Tel: 4075014 Fax:", ln=True, align='C')
-        pdf.ln(5)
-        
-        # Título COTIZACIONES
-        pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 8, "COTIZACIONES", ln=True, align='C')
-        pdf.set_font("Arial", 'B', 10)
-        pdf.cell(0, 6, f"No. {cotization_data['numero_cotizacion']}", ln=True, align='C')
         pdf.ln(3)
         
-        # COTIZACIÓN DE VENTAS
+        # Título COTIZACIONES
         pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 8, "COTIZACION DE VENTAS", ln=True, align='C')
-        pdf.ln(5)
+        pdf.cell(0, 6, "COTIZACIONES", ln=True, align='C')
+        pdf.set_font("Arial", 'B', 9)
+        pdf.cell(0, 5, f"No. {cotization_data['numero_cotizacion']}", ln=True, align='C')
+        pdf.ln(2)
         
-        # Información del cliente y fecha
+        # COTIZACIÓN DE VENTAS
+        pdf.set_font("Arial", 'B', 10)
+        pdf.cell(0, 6, "COTIZACION DE VENTAS", ln=True, align='C')
+        pdf.ln(3)
+        
+        # Información del cliente y fecha en dos columnas
         y_start = pdf.get_y()
         
-        # Cliente (lado izquierdo)
-        pdf.set_font("Arial", 'B', 10)
-        pdf.cell(40, 6, "Cliente", ln=False)
-        pdf.set_font("Arial", size=8)
-        pdf.cell(60, 6, "", ln=True)  # Espacio
-        
-        pdf.set_font("Arial", size=8)
-        pdf.cell(20, 5, "Nombre:", ln=False)
-        pdf.cell(70, 5, cotization_data['cliente'], ln=True)
-        pdf.cell(20, 5, "Dirección:", ln=False)
-        pdf.cell(70, 5, "CR 58 64 10", ln=True)
-        pdf.cell(20, 5, "Ciudad:", ln=False)
-        pdf.cell(70, 5, "Medellín", ln=True)
-        pdf.cell(20, 5, "Teléfono:", ln=False)
-        pdf.cell(70, 5, "4075014", ln=True)
+        # Cliente (lado izquierdo) - más compacto
+        pdf.set_font("Arial", 'B', 9)
+        pdf.cell(35, 5, "Cliente", ln=True)
+        pdf.set_font("Arial", size=7)
+        pdf.cell(15, 4, "Nombre:", ln=False)
+        pdf.cell(55, 4, cotization_data['cliente'], ln=True)
+        pdf.cell(15, 4, "Dirección:", ln=False)
+        pdf.cell(55, 4, "CR 58 64 10", ln=True)
+        pdf.cell(15, 4, "Ciudad:", ln=False)
+        pdf.cell(55, 4, "Medellín", ln=True)
+        pdf.cell(15, 4, "Teléfono:", ln=False)
+        pdf.cell(55, 4, "4075014", ln=True)
         
         # Información de fecha (lado derecho)
-        pdf.set_xy(120, y_start + 6)
-        pdf.cell(20, 5, "Fecha:", ln=False)
-        pdf.cell(30, 5, cotization_data['fecha'], ln=True)
-        pdf.set_x(120)
-        pdf.cell(20, 5, "Número pedido:", ln=False)
-        pdf.cell(30, 5, "C01", ln=True)
-        pdf.set_x(120)
-        pdf.cell(20, 5, "Forma de pago:", ln=False)
-        pdf.cell(30, 5, "CONSTRUCCIONES", ln=True)
-        pdf.set_x(120)
-        pdf.cell(20, 5, "Vendedor:", ln=False)
-        pdf.cell(30, 5, "CONSTRUCCIONES", ln=True)
+        pdf.set_xy(110, y_start)
+        pdf.set_font("Arial", size=7)
+        pdf.cell(15, 4, "Fecha:", ln=False)
+        pdf.cell(25, 4, cotization_data['fecha'], ln=True)
+        pdf.set_x(110)
+        pdf.cell(15, 4, "No. pedido:", ln=False)
+        pdf.cell(25, 4, "C01", ln=True)
+        pdf.set_x(110)
+        pdf.cell(15, 4, "Forma pago:", ln=False)
+        pdf.cell(25, 4, "CONSTRUCCIONES", ln=True)
+        pdf.set_x(110)
+        pdf.cell(15, 4, "Vendedor:", ln=False)
+        pdf.cell(25, 4, "CONSTRUCCIONES", ln=True)
         
-        pdf.ln(10)
+        pdf.ln(6)
         
-        # Tabla de productos
-        # Encabezados de la tabla
-        pdf.set_font("Arial", 'B', 8)
-        headers = ["Referencia", "Descripción", "U.M.", "Cantidad", "Peso Kg", "Precio unitario", "Impuestos", "Valor total"]
-        widths = [25, 60, 15, 20, 20, 25, 20, 25]
+        # Tabla de productos - anchos optimizados para caber en la página
+        pdf.set_font("Arial", 'B', 7)
+        headers = ["Referencia", "Descripción", "U.M.", "Cant.", "Peso", "Precio unit.", "Impuestos", "Valor total"]
+        widths = [22, 45, 12, 12, 12, 22, 18, 22]  # Total: 165 (cabe en 190)
         
         # Dibujar encabezados
-        x_start = 10
+        x_start = 15
         pdf.set_x(x_start)
         for i, header in enumerate(headers):
-            pdf.cell(widths[i], 8, header, 1, 0, 'C')
+            pdf.cell(widths[i], 6, header, 1, 0, 'C')
         pdf.ln()
         
         # Datos de productos
-        pdf.set_font("Arial", size=7)
+        pdf.set_font("Arial", size=6)
         for item in cotization_data['items']:
             pdf.set_x(x_start)
-            pdf.cell(widths[0], 8, item.get('referencia', ''), 1, 0, 'C')
-            pdf.cell(widths[1], 8, item.get('descripcion', ''), 1, 0, 'L')
-            pdf.cell(widths[2], 8, "UND", 1, 0, 'C')
-            pdf.cell(widths[3], 8, str(item.get('cantidad', 0)), 1, 0, 'C')
-            pdf.cell(widths[4], 8, str(item.get('peso', 0)), 1, 0, 'C')
-            pdf.cell(widths[5], 8, f"${item.get('precio_unitario', 0):,}", 1, 0, 'R')
-            pdf.cell(widths[6], 8, f"${item.get('impuestos', 0):,}", 1, 0, 'R')
-            pdf.cell(widths[7], 8, f"${item.get('valor_total', 0):,}", 1, 0, 'R')
+            pdf.cell(widths[0], 6, item.get('referencia', ''), 1, 0, 'C')
+            
+            # Truncar descripción si es muy larga
+            desc = item.get('descripcion', '')
+            if len(desc) > 25:
+                desc = desc[:22] + "..."
+            pdf.cell(widths[1], 6, desc, 1, 0, 'L')
+            
+            pdf.cell(widths[2], 6, "UND", 1, 0, 'C')
+            pdf.cell(widths[3], 6, str(item.get('cantidad', 0)), 1, 0, 'C')
+            pdf.cell(widths[4], 6, str(item.get('peso', 0)), 1, 0, 'C')
+            pdf.cell(widths[5], 6, f"${item.get('precio_unitario', 0):,}", 1, 0, 'R')
+            pdf.cell(widths[6], 6, f"${item.get('impuestos', 0):,}", 1, 0, 'R')
+            pdf.cell(widths[7], 6, f"${item.get('valor_total', 0):,}", 1, 0, 'R')
             pdf.ln()
         
-        # Llenar filas vacías si hay pocas items
-        empty_rows = max(0, 15 - len(cotization_data['items']))
+        # Llenar filas vacías - menos filas para ahorrar espacio
+        empty_rows = max(0, 8 - len(cotization_data['items']))
         for _ in range(empty_rows):
             pdf.set_x(x_start)
             for width in widths:
-                pdf.cell(width, 8, "", 1, 0, 'C')
+                pdf.cell(width, 6, "", 1, 0, 'C')
             pdf.ln()
         
-        # Totales
-        pdf.ln(5)
-        pdf.set_font("Arial", 'B', 10)
+        # Sección de notas y totales
+        pdf.ln(3)
+        y_notas = pdf.get_y()
         
-        # Notas (lado izquierdo)
-        pdf.cell(40, 8, "Notas", 1, 0, 'L')
-        pdf.cell(70, 8, "", 1, 1, 'L')  # Celda vacía para notas
+        # Notas (lado izquierdo) - más pequeño
+        pdf.set_font("Arial", 'B', 8)
+        pdf.cell(30, 6, "Notas", 1, 0, 'C')
+        pdf.set_font("Arial", size=7)
+        pdf.cell(60, 6, "", 1, 0, 'L')  # Celda vacía para notas
         
-        # Totales (lado derecho)
-        pdf.set_xy(120, pdf.get_y() - 8)
-        pdf.cell(30, 8, "Totales", 1, 0, 'C')
-        pdf.cell(40, 8, "", 1, 1, 'L')
+        # Totales (lado derecho) - compacto
+        pdf.set_font("Arial", 'B', 8)
+        pdf.cell(25, 6, "Totales", 1, 0, 'C')
+        pdf.cell(35, 6, "", 1, 1, 'L')
         
-        pdf.set_x(120)
-        pdf.set_font("Arial", size=9)
-        pdf.cell(30, 6, "Valor Subtotal:", 1, 0, 'L')
-        pdf.cell(40, 6, f"${cotization_data['subtotal']:,}", 1, 1, 'R')
+        # Fila de subtotal
+        pdf.set_x(x_start)
+        pdf.cell(90, 5, "", 0, 0)  # Espacio para notas
+        pdf.set_font("Arial", size=7)
+        pdf.cell(25, 5, "Valor Subtotal:", 1, 0, 'L')
+        pdf.cell(35, 5, f"${cotization_data['subtotal']:,}", 1, 1, 'R')
         
-        pdf.set_x(120)
-        pdf.cell(30, 6, "Valor impuestos:", 1, 0, 'L')
-        pdf.cell(40, 6, f"${cotization_data['impuestos']:,}", 1, 1, 'R')
+        # Fila de impuestos
+        pdf.set_x(x_start)
+        pdf.cell(90, 5, "", 0, 0)  # Espacio para notas
+        pdf.cell(25, 5, "Valor impuestos:", 1, 0, 'L')
+        pdf.cell(35, 5, f"${cotization_data['impuestos']:,}", 1, 1, 'R')
         
-        pdf.set_x(120)
-        pdf.set_font("Arial", 'B', 10)
-        pdf.cell(30, 8, "Total:", 1, 0, 'L')
-        pdf.cell(40, 8, f"${cotization_data['total']:,}", 1, 1, 'R')
+        # Fila de total
+        pdf.set_x(x_start)
+        pdf.cell(90, 5, "", 0, 0)  # Espacio para notas
+        pdf.set_font("Arial", 'B', 8)
+        pdf.cell(25, 6, "Total:", 1, 0, 'L')
+        pdf.cell(35, 6, f"${cotization_data['total']:,}", 1, 1, 'R')
         
-        # Firmas
-        pdf.ln(10)
-        pdf.set_font("Arial", size=8)
+        # Firmas - más compacto
+        pdf.ln(4)
+        pdf.set_font("Arial", size=7)
         
         # Líneas para firmas
         y_firma = pdf.get_y()
-        pdf.line(25, y_firma, 75, y_firma)  # Elaborado
-        pdf.line(85, y_firma, 135, y_firma)  # Aprobado  
-        pdf.line(145, y_firma, 195, y_firma)  # Recibido
+        pdf.line(25, y_firma, 65, y_firma)  # Elaborado
+        pdf.line(75, y_firma, 115, y_firma)  # Aprobado  
+        pdf.line(125, y_firma, 165, y_firma)  # Recibido
         
-        pdf.ln(3)
-        pdf.cell(50, 5, "Elaborado", ln=False, align='C')
-        pdf.cell(50, 5, "Aprobado", ln=False, align='C')
-        pdf.cell(50, 5, "Recibido", ln=False, align='C')
+        pdf.ln(2)
+        pdf.cell(50, 4, "Elaborado", ln=False, align='C')
+        pdf.cell(50, 4, "Aprobado", ln=False, align='C')
+        pdf.cell(50, 4, "Recibido", ln=False, align='C')
         
-        pdf.ln(8)
+        pdf.ln(6)
         pdf.set_font("Arial", size=6)
-        pdf.cell(0, 4, "ORIGINAL REIMPRESO", ln=True, align='L')
-        pdf.cell(0, 4, f"Página 1 de 1", ln=True, align='R')
+        pdf.cell(95, 3, "ORIGINAL REIMPRESO", ln=False, align='L')
+        pdf.cell(95, 3, "Página 1 de 1", ln=True, align='R')
         
         return pdf
         
