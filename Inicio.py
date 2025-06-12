@@ -108,54 +108,62 @@ def extract_cotization_data(response_text):
     # Normalizar texto
     text_lower = response_text.lower()
     
-    # Buscar precios en diferentes formatos
+    # Buscar precios en diferentes formatos - MÁS ESPECÍFICOS
     price_patterns = [
-        r'precio.*?(\d{1,3}(?:[.,]\d{3})*)\s*(?:pesos|cop|colombianos)',
-        r'\$\s*(\d{1,3}(?:[.,]\d{3})*)',
-        r'(\d{1,3}(?:[.,]\d{3})*)\s*(?:pesos|cop)',
-        r'es\s+de\s+\$?(\d{1,3}(?:[.,]\d{3})*)',
+        r'precio\s+unitario\s+es\s+de\s+(\d{1,3}(?:[.,]\d{3})*)',  # "precio unitario es de 51,792"
+        r'precio.*?(\d{1,3}(?:[.,]\d{3})*)\s*cop',  # "precio ... 51,792 COP"
+        r'\$\s*(\d{1,3}(?:[.,]\d{3})*)',  # "$51,792"
+        r'(\d{1,3}(?:[.,]\d{3})*)\s*cop',  # "51,792 COP"
+        r'es\s+de\s+(\d{1,3}(?:[.,]\d{3})*)',  # "es de 51,792"
     ]
     
-    # Buscar cantidades
+    # Buscar cantidades - MÁS ESPECÍFICOS
     quantity_patterns = [
-        r'(\d+)\s+unidades',
-        r'cantidad.*?(\d+)',
-        r'(\d+)\s+(?:alfardas|pisos|paredes|productos)',
-        r'para\s+(\d+)',
+        r'para\s+(\d+)\s+(?:alfardas|unidades|productos)',  # "para 10 alfardas"
+        r'(\d+)\s+unidades?\s*\*',  # "10 unidades *"
+        r'cantidad.*?(\d+)',  # "cantidad ... 10"
+        r'(\d+)\s+(?:alfardas|pisos|paredes)',  # "10 alfardas"
     ]
     
     precio = None
     cantidad = 1  # Default
     
-    # Extraer precio
+    # Extraer precio - MEJORADO
     for pattern in price_patterns:
-        match = re.search(pattern, text_lower)
-        if match:
-            precio_str = match.group(1).replace(',', '').replace('.', '')
+        matches = re.findall(pattern, text_lower)
+        for match in matches:
+            precio_str = match.replace(',', '').replace('.', '')
             try:
-                precio = int(precio_str)
-                if precio > 100:  # Validar que sea un precio razonable
+                precio_temp = int(precio_str)
+                # Validar que sea un precio razonable (entre 1000 y 10000000)
+                if 1000 <= precio_temp <= 10000000:
+                    precio = precio_temp
                     break
             except:
                 continue
+        if precio:
+            break
     
-    # Extraer cantidad
+    # Extraer cantidad - MEJORADO
     for pattern in quantity_patterns:
-        match = re.search(pattern, text_lower)
-        if match:
+        matches = re.findall(pattern, text_lower)
+        for match in matches:
             try:
-                cantidad = int(match.group(1))
-                if 1 <= cantidad <= 1000:  # Validar rango razonable
+                cantidad_temp = int(match)
+                if 1 <= cantidad_temp <= 1000:  # Validar rango razonable
+                    cantidad = cantidad_temp
                     break
             except:
                 continue
+        if cantidad > 1:  # Si ya encontramos una cantidad válida, usar esa
+            break
     
-    # Extraer descripción del producto
+    # Extraer descripción del producto - MEJORADO
     descripcion = "PRODUCTO"
     referencia = "REF001"
     
     # Buscar productos específicos
-    if 'piso pared' in text_lower or 'piso' in text_lower:
+    if 'piso pared' in text_lower:
         if '10x1.7x100' in text_lower:
             descripcion = "PISO PARED 10X1.7X100M2 CEP"
             referencia = "PP10017100"
@@ -163,7 +171,7 @@ def extract_cotization_data(response_text):
             descripcion = "PISO PARED"
             referencia = "PP001"
     elif 'alfarda' in text_lower:
-        if '12x300' in text_lower or '12x300' in response_text:
+        if '12x300' in text_lower:
             descripcion = "ALFARDA TRATADA 12X300"
             referencia = "RA40012300"
         else:
@@ -580,9 +588,18 @@ if st.sidebar.button("💾 Guardar conversación en PDF"):
         mime="application/pdf",
     )
 
-# Sección para generar PDF de cotización
+# Sección para generar PDF de cotización - SIEMPRE VISIBLE si hay datos
 if st.session_state.last_cotization_data:
-    st.sidebar.markdown("### Última Cotización")
+    st.sidebar.markdown("### 📄 Última Cotización")
+    
+    # Mostrar información básica de la cotización
+    cotization_info = st.session_state.last_cotization_data
+    if cotization_info['items']:
+        item = cotization_info['items'][0]  # Mostrar el primer item
+        st.sidebar.write(f"**Producto:** {item['descripcion']}")
+        st.sidebar.write(f"**Cantidad:** {item['cantidad']} UND")
+        st.sidebar.write(f"**Total:** ${cotization_info['total']:,} COP")
+    
     if st.sidebar.button("📄 Generar PDF de Cotización"):
         with st.spinner("Generando PDF de cotización..."):
             pdf = generate_cotization_pdf(st.session_state.last_cotization_data)
@@ -598,7 +615,7 @@ if st.session_state.last_cotization_data:
                 
                 # Botón de descarga
                 st.sidebar.download_button(
-                    label="Descargar Cotización PDF",
+                    label="⬇️ Descargar Cotización PDF",
                     data=pdf_data,
                     file_name=f"cotizacion_{st.session_state.last_cotization_data['numero_cotizacion']}.pdf",
                     mime="application/pdf",
@@ -733,50 +750,20 @@ if prompt:
                     with st.spinner("Procesando datos de cotización..."):
                         cotization_data = extract_cotization_data(response_text)
                         
+                        # Debug temporal - mostrar datos extraídos
+                        st.write("🔍 **Debug - Datos extraídos:**")
+                        st.json(cotization_data)
+                        
                         # Guardar datos de cotización en session state si son válidos
                         if cotization_data['items'] and len(cotization_data['items']) > 0:
                             st.session_state.last_cotization_data = cotization_data
                             
                             # Mostrar mensaje de éxito
                             st.success("✅ Cotización generada exitosamente!")
+                            st.info("📄 Puedes generar el PDF desde la barra lateral.")
                             
-                            # Mostrar botón para generar PDF directamente aquí también
-                            if st.button("📄 Generar PDF de Cotización", key="generate_pdf_main"):
-                                with st.spinner("Generando PDF de cotización..."):
-                                    pdf = generate_cotization_pdf(cotization_data)
-                                    if pdf:
-                                        # Guardar el PDF en un archivo temporal
-                                        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-                                            pdf_path = tmp_file.name
-                                            pdf.output(pdf_path)
-                                        
-                                        # Abrir y leer el archivo para la descarga
-                                        with open(pdf_path, "rb") as f:
-                                            pdf_data = f.read()
-                                        
-                                        # Botón de descarga
-                                        st.download_button(
-                                            label="⬇️ Descargar Cotización PDF",
-                                            data=pdf_data,
-                                            file_name=f"cotizacion_{cotization_data['numero_cotizacion']}.pdf",
-                                            mime="application/pdf",
-                                            key="download_pdf_main"
-                                        )
-                            
-                            # Preview de la cotización
-                            with st.expander("📋 Vista previa de la cotización"):
-                                st.write(f"**Número de cotización:** {cotization_data['numero_cotizacion']}")
-                                st.write(f"**Fecha:** {cotization_data['fecha']}")
-                                st.write(f"**Cliente:** {cotization_data['cliente']}")
-                                
-                                if cotization_data['items']:
-                                    st.write("**Productos:**")
-                                    for item in cotization_data['items']:
-                                        st.write(f"- {item['referencia']}: {item['descripcion']} - {item['cantidad']} UND - ${item['precio_unitario']:,}")
-                                    
-                                    st.write(f"**Subtotal:** ${cotization_data['subtotal']:,}")
-                                    st.write(f"**Impuestos:** ${cotization_data['impuestos']:,}")
-                                    st.write(f"**Total:** ${cotization_data['total']:,}")
+                            # Debug temporal - confirmar que se guardó
+                            st.write("✅ **Datos guardados en session_state**")
                         else:
                             # Si el usuario pidió cotización pero no se pudieron extraer datos, mostrar mensaje
                             st.warning("⚠️ Se solicitó generar cotización pero no se pudieron extraer todos los datos necesarios del precio proporcionado.")
