@@ -674,7 +674,7 @@ def query_agent(prompt, history=None):
     except Exception as e:
         return {"error": f"Error al comunicarse con el asistente: {str(e)}"}
 
-# Mostrar historial de conversación
+# Mostrar historial de conversación (sin audio)
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
