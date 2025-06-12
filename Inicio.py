@@ -157,11 +157,14 @@ def extract_cotization_data(response_text):
     
     # Construir item basado en la información encontrada
     if precio_match and cantidad_match:
+        precio_unitario = int(precio_match.group(1))
+        cantidad = int(cantidad_match.group(1))
+        
         item = {
             'referencia': 'RA40012300',  # Referencia por defecto para alfardas
             'descripcion': 'ALFARDA TRATADA 12X300',
-            'cantidad': int(cantidad_match.group(1)),
-            'precio_unitario': int(precio_match.group(1)),
+            'cantidad': cantidad,
+            'precio_unitario': precio_unitario,
             'impuestos': 0,
             'valor_total': 0,
             'peso': 186  # Peso típico
@@ -172,21 +175,21 @@ def extract_cotization_data(response_text):
             specs = especif_match.group(1).upper()
             item['descripcion'] = f'ALFARDA TRATADA {specs}'
         
-        # Calcular valores
-        item['valor_total'] = item['precio_unitario'] * item['cantidad']
-        item['impuestos'] = int(item['valor_total'] * 0.05)  # 5% de impuestos
+        # Calcular valores correctamente
+        item['valor_total'] = precio_unitario * cantidad
+        item['impuestos'] = 0  # Sin impuestos por el momento según tu solicitud
         
         cotization_data['items'].append(item)
         cotization_data['subtotal'] = item['valor_total']
-        cotization_data['impuestos'] = item['impuestos']
-        cotization_data['total'] = cotization_data['subtotal'] + cotization_data['impuestos']
+        cotization_data['impuestos'] = 0  # Sin impuestos
+        cotization_data['total'] = cotization_data['subtotal']  # Sin sumar impuestos
     
     # Si no se pudo extraer con el método anterior, usar método alternativo
     elif 'alfarda' in text_lower and ('precio' in text_lower or 'cop' in text_lower):
         # Buscar números que puedan ser precios o cantidades
         numbers = re.findall(r'\d+', response_text)
         if len(numbers) >= 2:
-            # Asumir que el primer número es cantidad y buscar el precio más probable
+            # Asumir que el primer número pequeño es cantidad y buscar el precio más probable
             cantidad = 5  # Valor por defecto basado en la pregunta
             precio = 42378  # Precio mencionado en la respuesta
             
@@ -194,6 +197,12 @@ def extract_cotization_data(response_text):
             for num in numbers:
                 if int(num) <= 20:  # Probablemente cantidad
                     cantidad = int(num)
+                    break
+            
+            # Buscar precio específico (número más grande)
+            for num in numbers:
+                if int(num) > 1000:  # Probablemente precio
+                    precio = int(num)
                     break
             
             item = {
@@ -206,27 +215,18 @@ def extract_cotization_data(response_text):
                 'peso': 186
             }
             
-            # Calcular valores
-            item['valor_total'] = item['precio_unitario'] * item['cantidad']
-            item['impuestos'] = int(item['valor_total'] * 0.05)
+            # Calcular valores correctamente
+            item['valor_total'] = precio * cantidad
+            item['impuestos'] = 0  # Sin impuestos por el momento
             
             cotization_data['items'].append(item)
             cotization_data['subtotal'] = item['valor_total']
-            cotization_data['impuestos'] = item['impuestos']
-            cotization_data['total'] = cotization_data['subtotal'] + cotization_data['impuestos']
+            cotization_data['impuestos'] = 0  # Sin impuestos
+            cotization_data['total'] = cotization_data['subtotal']  # Sin sumar impuestos
     
     return cotization_data
 
-# Función para generar PDF de cotización
-def generate_cotization_pdf(cotization_data):
-    """Genera un PDF de cotización similar al formato de la imagen"""
-    try:
-        # Crear PDF con orientación vertical
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_auto_page_break(auto=True, margin=15)
-        
-        # Configurar fuente
+ar fuente
         pdf.set_font("Arial", size=8)
         
         # Encabezado de la empresa
