@@ -580,9 +580,18 @@ if st.sidebar.button("💾 Guardar conversación en PDF"):
         mime="application/pdf",
     )
 
-# Sección para generar PDF de cotización
+# Sección para generar PDF de cotización - SIEMPRE VISIBLE si hay datos
 if st.session_state.last_cotization_data:
-    st.sidebar.markdown("### Última Cotización")
+    st.sidebar.markdown("### 📄 Última Cotización")
+    
+    # Mostrar información básica de la cotización
+    cotization_info = st.session_state.last_cotization_data
+    if cotization_info['items']:
+        item = cotization_info['items'][0]  # Mostrar el primer item
+        st.sidebar.write(f"**Producto:** {item['descripcion']}")
+        st.sidebar.write(f"**Cantidad:** {item['cantidad']} UND")
+        st.sidebar.write(f"**Total:** ${cotization_info['total']:,} COP")
+    
     if st.sidebar.button("📄 Generar PDF de Cotización"):
         with st.spinner("Generando PDF de cotización..."):
             pdf = generate_cotization_pdf(st.session_state.last_cotization_data)
@@ -598,7 +607,7 @@ if st.session_state.last_cotization_data:
                 
                 # Botón de descarga
                 st.sidebar.download_button(
-                    label="Descargar Cotización PDF",
+                    label="⬇️ Descargar Cotización PDF",
                     data=pdf_data,
                     file_name=f"cotizacion_{st.session_state.last_cotization_data['numero_cotizacion']}.pdf",
                     mime="application/pdf",
@@ -733,6 +742,10 @@ if prompt:
                     with st.spinner("Procesando datos de cotización..."):
                         cotization_data = extract_cotization_data(response_text)
                         
+                        # Debug temporal - mostrar datos extraídos
+                        st.write("🔍 **Debug - Datos extraídos:**")
+                        st.json(cotization_data)
+                        
                         # Guardar datos de cotización en session state si son válidos
                         if cotization_data['items'] and len(cotization_data['items']) > 0:
                             st.session_state.last_cotization_data = cotization_data
@@ -740,6 +753,9 @@ if prompt:
                             # Mostrar mensaje de éxito
                             st.success("✅ Cotización generada exitosamente!")
                             st.info("📄 Puedes generar el PDF desde la barra lateral.")
+                            
+                            # Debug temporal - confirmar que se guardó
+                            st.write("✅ **Datos guardados en session_state**")
                         else:
                             # Si el usuario pidió cotización pero no se pudieron extraer datos, mostrar mensaje
                             st.warning("⚠️ Se solicitó generar cotización pero no se pudieron extraer todos los datos necesarios del precio proporcionado.")
