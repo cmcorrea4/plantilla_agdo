@@ -580,18 +580,9 @@ if st.sidebar.button("💾 Guardar conversación en PDF"):
         mime="application/pdf",
     )
 
-# Sección para generar PDF de cotización - SIEMPRE VISIBLE si hay datos
+# Sección para generar PDF de cotización
 if st.session_state.last_cotization_data:
-    st.sidebar.markdown("### 📄 Última Cotización")
-    
-    # Mostrar información básica de la cotización
-    cotization_info = st.session_state.last_cotization_data
-    if cotization_info['items']:
-        item = cotization_info['items'][0]  # Mostrar el primer item
-        st.sidebar.write(f"**Producto:** {item['descripcion']}")
-        st.sidebar.write(f"**Cantidad:** {item['cantidad']} UND")
-        st.sidebar.write(f"**Total:** ${cotization_info['total']:,} COP")
-    
+    st.sidebar.markdown("### Última Cotización")
     if st.sidebar.button("📄 Generar PDF de Cotización"):
         with st.spinner("Generando PDF de cotización..."):
             pdf = generate_cotization_pdf(st.session_state.last_cotization_data)
@@ -607,7 +598,7 @@ if st.session_state.last_cotization_data:
                 
                 # Botón de descarga
                 st.sidebar.download_button(
-                    label="⬇️ Descargar Cotización PDF",
+                    label="Descargar Cotización PDF",
                     data=pdf_data,
                     file_name=f"cotizacion_{st.session_state.last_cotization_data['numero_cotizacion']}.pdf",
                     mime="application/pdf",
@@ -742,20 +733,50 @@ if prompt:
                     with st.spinner("Procesando datos de cotización..."):
                         cotization_data = extract_cotization_data(response_text)
                         
-                        # Debug temporal - mostrar datos extraídos
-                        st.write("🔍 **Debug - Datos extraídos:**")
-                        st.json(cotization_data)
-                        
                         # Guardar datos de cotización en session state si son válidos
                         if cotization_data['items'] and len(cotization_data['items']) > 0:
                             st.session_state.last_cotization_data = cotization_data
                             
                             # Mostrar mensaje de éxito
                             st.success("✅ Cotización generada exitosamente!")
-                            st.info("📄 Puedes generar el PDF desde la barra lateral.")
                             
-                            # Debug temporal - confirmar que se guardó
-                            st.write("✅ **Datos guardados en session_state**")
+                            # Mostrar botón para generar PDF directamente aquí también
+                            if st.button("📄 Generar PDF de Cotización", key="generate_pdf_main"):
+                                with st.spinner("Generando PDF de cotización..."):
+                                    pdf = generate_cotization_pdf(cotization_data)
+                                    if pdf:
+                                        # Guardar el PDF en un archivo temporal
+                                        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                                            pdf_path = tmp_file.name
+                                            pdf.output(pdf_path)
+                                        
+                                        # Abrir y leer el archivo para la descarga
+                                        with open(pdf_path, "rb") as f:
+                                            pdf_data = f.read()
+                                        
+                                        # Botón de descarga
+                                        st.download_button(
+                                            label="⬇️ Descargar Cotización PDF",
+                                            data=pdf_data,
+                                            file_name=f"cotizacion_{cotization_data['numero_cotizacion']}.pdf",
+                                            mime="application/pdf",
+                                            key="download_pdf_main"
+                                        )
+                            
+                            # Preview de la cotización
+                            with st.expander("📋 Vista previa de la cotización"):
+                                st.write(f"**Número de cotización:** {cotization_data['numero_cotizacion']}")
+                                st.write(f"**Fecha:** {cotization_data['fecha']}")
+                                st.write(f"**Cliente:** {cotization_data['cliente']}")
+                                
+                                if cotization_data['items']:
+                                    st.write("**Productos:**")
+                                    for item in cotization_data['items']:
+                                        st.write(f"- {item['referencia']}: {item['descripcion']} - {item['cantidad']} UND - ${item['precio_unitario']:,}")
+                                    
+                                    st.write(f"**Subtotal:** ${cotization_data['subtotal']:,}")
+                                    st.write(f"**Impuestos:** ${cotization_data['impuestos']:,}")
+                                    st.write(f"**Total:** ${cotization_data['total']:,}")
                         else:
                             # Si el usuario pidió cotización pero no se pudieron extraer datos, mostrar mensaje
                             st.warning("⚠️ Se solicitó generar cotización pero no se pudieron extraer todos los datos necesarios del precio proporcionado.")
