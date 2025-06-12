@@ -2,13 +2,10 @@ import streamlit as st
 import requests
 import json
 import time
-import base64
-from gtts import gTTS
-import io
-from fpdf import FPDF
 import tempfile
 import re
 from datetime import datetime
+from fpdf import FPDF
 
 # Configuración de la página sin el parámetro theme (compatible con versiones anteriores)
 st.set_page_config(
@@ -41,10 +38,6 @@ st.markdown("""
         background-color: #262730;
         color: white;
     }
-    #div.stButton > button:first-child {
-    #    background-color: #1E88E5;
-    #    color: white;
-    #}
     .css-1d391kg, .css-12oz5g7 {
         background-color: #262730;
     }
@@ -62,11 +55,6 @@ st.markdown("""
         font-size: 1.5rem;
         color: #FFFFFF;
         margin-bottom: 1rem;
-    }
-    .audio-controls {
-        display: flex;
-        align-items: center;
-        margin-top: 10px;
     }
     .footer {
         position: fixed;
@@ -104,34 +92,9 @@ def initialize_session_vars():
 # Inicializar variables
 initialize_session_vars()
 
-# Función para generar audio a partir de texto
-def text_to_speech(text):
-    try:
-        # Crear objeto gTTS (siempre en español y rápido)
-        tts = gTTS(text=text, lang='es', slow=False)
-        
-        # Guardar audio en un buffer en memoria
-        audio_buffer = io.BytesIO()
-        tts.write_to_fp(audio_buffer)
-        audio_buffer.seek(0)
-        
-        # Convertir a base64 para reproducir en HTML (sin autoplay)
-        audio_base64 = base64.b64encode(audio_buffer.read()).decode()
-        audio_html = f'''
-        <div class="audio-controls">
-            <audio controls>
-                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-                Tu navegador no soporta el elemento de audio.
-            </audio>
-        </div>
-        '''
-        return audio_html
-    except Exception as e:
-        return f"<div class='error'>Error al generar audio: {str(e)}</div>"
-
-# Función para extraer datos de cotización de la respuesta del LLM
+# Función mejorada para extraer datos de cotización de la respuesta del LLM
 def extract_cotization_data(response_text):
-    """Extrae datos de productos de la respuesta del LLM"""
+    """Extrae datos de productos de la respuesta del LLM - Versión mejorada"""
     cotization_data = {
         'items': [],
         'subtotal': 0,
@@ -142,87 +105,87 @@ def extract_cotization_data(response_text):
         'numero_cotizacion': f"CCV-{int(time.time())}"[-8:]
     }
     
-    # Buscar información específica en el texto
+    # Normalizar texto
     text_lower = response_text.lower()
-    lines = response_text.split('\n')
     
-    # Extraer información de la respuesta específica
-    precio_match = re.search(r'precio.*?(\d+)\s*cop', text_lower)
-    cantidad_match = re.search(r'cantidad.*?(\d+)', text_lower)
-    subtotal_match = re.search(r'subtotal.*?(\d+)\s*cop', text_lower)
-    total_match = re.search(r'total.*?(\d+)\s*cop', text_lower)
+    # Buscar precios en diferentes formatos
+    price_patterns = [
+        r'precio.*?(\d{1,3}(?:[.,]\d{3})*)\s*(?:pesos|cop|colombianos)',
+        r'\$\s*(\d{1,3}(?:[.,]\d{3})*)',
+        r'(\d{1,3}(?:[.,]\d{3})*)\s*(?:pesos|cop)',
+        r'es\s+de\s+\$?(\d{1,3}(?:[.,]\d{3})*)',
+    ]
     
-    # Buscar especificaciones del producto
-    especif_match = re.search(r'especificaciones?.*?(\d+x\d+)', text_lower)
+    # Buscar cantidades
+    quantity_patterns = [
+        r'(\d+)\s+unidades',
+        r'cantidad.*?(\d+)',
+        r'(\d+)\s+(?:alfardas|pisos|paredes|productos)',
+        r'para\s+(\d+)',
+    ]
     
-    # Construir item basado en la información encontrada
-    if precio_match and cantidad_match:
-        precio_unitario = int(precio_match.group(1))
-        cantidad = int(cantidad_match.group(1))
-        
+    precio = None
+    cantidad = 1  # Default
+    
+    # Extraer precio
+    for pattern in price_patterns:
+        match = re.search(pattern, text_lower)
+        if match:
+            precio_str = match.group(1).replace(',', '').replace('.', '')
+            try:
+                precio = int(precio_str)
+                if precio > 100:  # Validar que sea un precio razonable
+                    break
+            except:
+                continue
+    
+    # Extraer cantidad
+    for pattern in quantity_patterns:
+        match = re.search(pattern, text_lower)
+        if match:
+            try:
+                cantidad = int(match.group(1))
+                if 1 <= cantidad <= 1000:  # Validar rango razonable
+                    break
+            except:
+                continue
+    
+    # Extraer descripción del producto
+    descripcion = "PRODUCTO"
+    referencia = "REF001"
+    
+    # Buscar productos específicos
+    if 'piso pared' in text_lower or 'piso' in text_lower:
+        if '10x1.7x100' in text_lower:
+            descripcion = "PISO PARED 10X1.7X100M2 CEP"
+            referencia = "PP10017100"
+        else:
+            descripcion = "PISO PARED"
+            referencia = "PP001"
+    elif 'alfarda' in text_lower:
+        if '12x300' in text_lower or '12x300' in response_text:
+            descripcion = "ALFARDA TRATADA 12X300"
+            referencia = "RA40012300"
+        else:
+            descripcion = "ALFARDA TRATADA"
+            referencia = "RA001"
+    
+    # Si encontramos precio válido, crear el item
+    if precio and precio > 0:
         item = {
-            'referencia': 'RA40012300',  # Referencia por defecto para alfardas
-            'descripcion': 'ALFARDA TRATADA 12X300',
+            'referencia': referencia,
+            'descripcion': descripcion,
             'cantidad': cantidad,
-            'precio_unitario': precio_unitario,
+            'precio_unitario': precio,
             'impuestos': 0,
-            'valor_total': 0,
-            'peso': 186  # Peso típico
+            'valor_total': precio * cantidad,
+            'peso': 186  # Peso por defecto
         }
-        
-        # Si se encontraron especificaciones, actualizar descripción
-        if especif_match:
-            specs = especif_match.group(1).upper()
-            item['descripcion'] = f'ALFARDA TRATADA {specs}'
-        
-        # Calcular valores correctamente
-        item['valor_total'] = precio_unitario * cantidad
-        item['impuestos'] = 0  # Sin impuestos por el momento según tu solicitud
         
         cotization_data['items'].append(item)
         cotization_data['subtotal'] = item['valor_total']
-        cotization_data['impuestos'] = 0  # Sin impuestos
-        cotization_data['total'] = cotization_data['subtotal']  # Sin sumar impuestos
-    
-    # Si no se pudo extraer con el método anterior, usar método alternativo
-    elif 'alfarda' in text_lower and ('precio' in text_lower or 'cop' in text_lower):
-        # Buscar números que puedan ser precios o cantidades
-        numbers = re.findall(r'\d+', response_text)
-        if len(numbers) >= 2:
-            # Asumir que el primer número pequeño es cantidad y buscar el precio más probable
-            cantidad = 5  # Valor por defecto basado en la pregunta
-            precio = 42378  # Precio mencionado en la respuesta
-            
-            # Buscar cantidad específica en el texto
-            for num in numbers:
-                if int(num) <= 20:  # Probablemente cantidad
-                    cantidad = int(num)
-                    break
-            
-            # Buscar precio específico (número más grande)
-            for num in numbers:
-                if int(num) > 1000:  # Probablemente precio
-                    precio = int(num)
-                    break
-            
-            item = {
-                'referencia': 'RA40012300',
-                'descripcion': 'ALFARDA TRATADA 12X300',
-                'cantidad': cantidad,
-                'precio_unitario': precio,
-                'impuestos': 0,
-                'valor_total': 0,
-                'peso': 186
-            }
-            
-            # Calcular valores correctamente
-            item['valor_total'] = precio * cantidad
-            item['impuestos'] = 0  # Sin impuestos por el momento
-            
-            cotization_data['items'].append(item)
-            cotization_data['subtotal'] = item['valor_total']
-            cotization_data['impuestos'] = 0  # Sin impuestos
-            cotization_data['total'] = cotization_data['subtotal']  # Sin sumar impuestos
+        cotization_data['impuestos'] = 0
+        cotization_data['total'] = cotization_data['subtotal']
     
     return cotization_data
 
@@ -390,20 +353,35 @@ def generate_cotization_pdf(cotization_data):
         st.error(f"Error al generar PDF: {str(e)}")
         return None
 
-# Función para detectar si una respuesta contiene información de cotización
+# Función mejorada para detectar si una respuesta contiene información de cotización
 def is_cotization_response(response_text):
     """Detecta si la respuesta contiene información de cotización"""
-    cotization_keywords = [
-        'cotización', 'cotizacion', 'precio', 'valor', 'cop', 'total',
-        'referencia', 'producto', 'inventario', 'disponibilidad',
-        'unidades', 'UND', 'tratada', 'inmunizada', 'alfarda', 'subtotal'
-    ]
+    # Palabras clave más específicas y con pesos
+    high_priority_keywords = ['precio', 'valor', 'cop', 'pesos', 'cotización', 'cotizacion']
+    medium_priority_keywords = ['total', 'referencia', 'producto', 'inventario', 'disponibilidad']
+    low_priority_keywords = ['unidades', 'UND', 'tratada', 'inmunizada', 'alfarda', 'piso', 'pared']
     
     text_lower = response_text.lower()
-    keyword_count = sum(1 for keyword in cotization_keywords if keyword.lower() in text_lower)
     
-    # Si tiene al menos 3 palabras clave relacionadas con cotización, es probable que sea una cotización
-    return keyword_count >= 3
+    # Contar palabras clave con pesos
+    high_count = sum(1 for keyword in high_priority_keywords if keyword in text_lower)
+    medium_count = sum(1 for keyword in medium_priority_keywords if keyword in text_lower)
+    low_count = sum(1 for keyword in low_priority_keywords if keyword in text_lower)
+    
+    # Calcular puntuación ponderada
+    score = (high_count * 3) + (medium_count * 2) + (low_count * 1)
+    
+    # También verificar patrones específicos de precios
+    price_patterns = [
+        r'\$\s*\d{1,3}(?:[.,]\d{3})*',
+        r'\d{1,3}(?:[.,]\d{3})*\s*(?:pesos|cop)',
+        r'precio.*\d+',
+    ]
+    
+    has_price_pattern = any(re.search(pattern, text_lower) for pattern in price_patterns)
+    
+    # Es cotización si tiene puntuación alta O tiene patrón de precio + alguna palabra clave
+    return score >= 6 or (has_price_pattern and score >= 3)
 
 # Título y descripción de la aplicación
 st.markdown("<h1 class='main-header'>Asistente Construinmuniza</h1>", unsafe_allow_html=True)
@@ -713,9 +691,6 @@ def query_agent(prompt, history=None):
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
-        # Si es un mensaje del asistente y tiene audio asociado, mostrarlo
-        if message["role"] == "assistant" and "audio_html" in message:
-            st.markdown(message["audio_html"], unsafe_allow_html=True)
 
 # Campo de entrada para el mensaje
 prompt = st.chat_input("Escribe tu pregunta aquí...")
@@ -757,16 +732,12 @@ if prompt:
                     with st.spinner("Procesando datos de cotización..."):
                         cotization_data = extract_cotization_data(response_text)
                         
-                        # Debug: Mostrar información extraída
-                        st.write("🔍 **Debug - Datos extraídos:**")
-                        st.json(cotization_data)
-                        
-                        # Guardar datos de cotización en session state
+                        # Guardar datos de cotización en session state si son válidos
                         if cotization_data['items'] and len(cotization_data['items']) > 0:
                             st.session_state.last_cotization_data = cotization_data
                             
                             # Mostrar mensaje de éxito
-                            st.success("✅ Se detectó y procesó información de cotización!")
+                            st.success("✅ Cotización generada exitosamente!")
                             
                             # Mostrar botón para generar PDF directamente aquí también
                             if st.button("📄 Generar PDF de Cotización", key="generate_pdf_main"):
@@ -805,23 +776,9 @@ if prompt:
                                     st.write(f"**Subtotal:** ${cotization_data['subtotal']:,}")
                                     st.write(f"**Impuestos:** ${cotization_data['impuestos']:,}")
                                     st.write(f"**Total:** ${cotization_data['total']:,}")
-                        else:
-                            st.warning("⚠️ Se detectó información de cotización pero no se pudieron extraer productos válidos.")
-                            st.write("Texto analizado:", response_text[:200] + "...")
-                else:
-                    st.info("ℹ️ No se detectó información de cotización en esta respuesta.")
                 
-                # Generar audio (siempre)
-                audio_html = None
-                with st.spinner("Generando audio..."):
-                    audio_html = text_to_speech(response_text)
-                    st.markdown(audio_html, unsafe_allow_html=True)
-                
-                # Añadir respuesta al historial con el audio
-                message_data = {"role": "assistant", "content": response_text}
-                if audio_html:
-                    message_data["audio_html"] = audio_html
-                st.session_state.messages.append(message_data)
+                # Añadir respuesta al historial
+                st.session_state.messages.append({"role": "assistant", "content": response_text})
 
 # Pie de página
 st.markdown("<div class='footer'>Asistente Digital © 2025</div>", unsafe_allow_html=True)
