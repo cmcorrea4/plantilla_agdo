@@ -7,6 +7,8 @@ from gtts import gTTS
 import io
 from fpdf import FPDF
 import tempfile
+import re
+from datetime import datetime
 
 # Configuración de la página sin el parámetro theme (compatible con versiones anteriores)
 st.set_page_config(
@@ -96,6 +98,8 @@ def initialize_session_vars():
         st.session_state.agent_access_key = ""
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    if "last_cotization_data" not in st.session_state:
+        st.session_state.last_cotization_data = None
 
 # Inicializar variables
 initialize_session_vars()
@@ -124,6 +128,254 @@ def text_to_speech(text):
         return audio_html
     except Exception as e:
         return f"<div class='error'>Error al generar audio: {str(e)}</div>"
+
+# Función para extraer datos de cotización de la respuesta del LLM
+def extract_cotization_data(response_text):
+    """Extrae datos de productos de la respuesta del LLM"""
+    cotization_data = {
+        'items': [],
+        'subtotal': 0,
+        'impuestos': 0,
+        'total': 0,
+        'cliente': 'CONSUMIDOR FINAL',
+        'fecha': datetime.now().strftime('%d/%m/%Y'),
+        'numero_cotizacion': f"CCV-{int(time.time())}"[-8:]
+    }
+    
+    # Patrones para extraer información de productos
+    patterns = {
+        'reference': r'[A-Z]{2}\d{8}',  # Ejemplo: RA40012300
+        'price': r'\$[\d,]+',
+        'quantity': r'\b\d+\s*UND\b|\b\d+\s*unidades?\b',
+        'description': r'[A-Z\s\d]+(?:TRATAD[AO]|INMUNIZAD[AO]|MADERA|PISO|PARED)',
+    }
+    
+    lines = response_text.split('\n')
+    current_item = {}
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+            
+        # Buscar referencias de productos
+        ref_match = re.search(patterns['reference'], line)
+        if ref_match:
+            if current_item:  # Si ya hay un item anterior, guardarlo
+                cotization_data['items'].append(current_item)
+            current_item = {
+                'referencia': ref_match.group(),
+                'descripcion': '',
+                'cantidad': 1,
+                'precio_unitario': 0,
+                'impuestos': 0,
+                'valor_total': 0,
+                'peso': 0
+            }
+        
+        # Buscar precios
+        price_match = re.search(patterns['price'], line)
+        if price_match and current_item:
+            price_str = price_match.group().replace('$', '').replace(',', '')
+            try:
+                price = int(price_str)
+                current_item['precio_unitario'] = price
+            except ValueError:
+                pass
+        
+        # Buscar cantidades
+        qty_match = re.search(r'\b(\d+)\s*(?:UND|unidades?)\b', line)
+        if qty_match and current_item:
+            current_item['cantidad'] = int(qty_match.group(1))
+        
+        # Buscar descripciones
+        desc_match = re.search(r'([A-Z\s\d]+(?:TRATAD[AO]|INMUNIZAD[AO]|MADERA|PISO|PARED)[A-Z\s\d]*)', line)
+        if desc_match and current_item:
+            current_item['descripcion'] = desc_match.group(1).strip()
+    
+    # Agregar el último item si existe
+    if current_item:
+        cotization_data['items'].append(current_item)
+    
+    # Calcular totales
+    for item in cotization_data['items']:
+        if item['precio_unitario'] > 0 and item['cantidad'] > 0:
+            item['valor_total'] = item['precio_unitario'] * item['cantidad']
+            item['impuestos'] = int(item['valor_total'] * 0.05)  # 5% de impuestos aproximado
+            cotization_data['subtotal'] += item['valor_total']
+            cotization_data['impuestos'] += item['impuestos']
+    
+    cotization_data['total'] = cotization_data['subtotal'] + cotization_data['impuestos']
+    
+    return cotization_data
+
+# Función para generar PDF de cotización
+def generate_cotization_pdf(cotization_data):
+    """Genera un PDF de cotización similar al formato de la imagen"""
+    try:
+        # Crear PDF con orientación vertical
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=15)
+        
+        # Configurar fuente
+        pdf.set_font("Arial", size=8)
+        
+        # Encabezado de la empresa
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 8, "Construcciones Inmunizadas De Colombia", ln=True, align='C')
+        pdf.set_font("Arial", size=8)
+        pdf.cell(0, 4, "Nit: 900297110", ln=True, align='C')
+        pdf.cell(0, 4, "Cra 58 64 10", ln=True, align='C')
+        pdf.cell(0, 4, "Tel: 4075014 Fax:", ln=True, align='C')
+        pdf.ln(5)
+        
+        # Título COTIZACIONES
+        pdf.set_font("Arial", 'B', 14)
+        pdf.cell(0, 8, "COTIZACIONES", ln=True, align='C')
+        pdf.set_font("Arial", 'B', 10)
+        pdf.cell(0, 6, f"No. {cotization_data['numero_cotizacion']}", ln=True, align='C')
+        pdf.ln(3)
+        
+        # COTIZACIÓN DE VENTAS
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 8, "COTIZACION DE VENTAS", ln=True, align='C')
+        pdf.ln(5)
+        
+        # Información del cliente y fecha
+        y_start = pdf.get_y()
+        
+        # Cliente (lado izquierdo)
+        pdf.set_font("Arial", 'B', 10)
+        pdf.cell(40, 6, "Cliente", ln=False)
+        pdf.set_font("Arial", size=8)
+        pdf.cell(60, 6, "", ln=True)  # Espacio
+        
+        pdf.set_font("Arial", size=8)
+        pdf.cell(20, 5, "Nombre:", ln=False)
+        pdf.cell(70, 5, cotization_data['cliente'], ln=True)
+        pdf.cell(20, 5, "Dirección:", ln=False)
+        pdf.cell(70, 5, "CR 58 64 10", ln=True)
+        pdf.cell(20, 5, "Ciudad:", ln=False)
+        pdf.cell(70, 5, "Medellín", ln=True)
+        pdf.cell(20, 5, "Teléfono:", ln=False)
+        pdf.cell(70, 5, "4075014", ln=True)
+        
+        # Información de fecha (lado derecho)
+        pdf.set_xy(120, y_start + 6)
+        pdf.cell(20, 5, "Fecha:", ln=False)
+        pdf.cell(30, 5, cotization_data['fecha'], ln=True)
+        pdf.set_x(120)
+        pdf.cell(20, 5, "Número pedido:", ln=False)
+        pdf.cell(30, 5, "C01", ln=True)
+        pdf.set_x(120)
+        pdf.cell(20, 5, "Forma de pago:", ln=False)
+        pdf.cell(30, 5, "CONSTRUCCIONES", ln=True)
+        pdf.set_x(120)
+        pdf.cell(20, 5, "Vendedor:", ln=False)
+        pdf.cell(30, 5, "CONSTRUCCIONES", ln=True)
+        
+        pdf.ln(10)
+        
+        # Tabla de productos
+        # Encabezados de la tabla
+        pdf.set_font("Arial", 'B', 8)
+        headers = ["Referencia", "Descripción", "U.M.", "Cantidad", "Peso Kg", "Precio unitario", "Impuestos", "Valor total"]
+        widths = [25, 60, 15, 20, 20, 25, 20, 25]
+        
+        # Dibujar encabezados
+        x_start = 10
+        pdf.set_x(x_start)
+        for i, header in enumerate(headers):
+            pdf.cell(widths[i], 8, header, 1, 0, 'C')
+        pdf.ln()
+        
+        # Datos de productos
+        pdf.set_font("Arial", size=7)
+        for item in cotization_data['items']:
+            pdf.set_x(x_start)
+            pdf.cell(widths[0], 8, item.get('referencia', ''), 1, 0, 'C')
+            pdf.cell(widths[1], 8, item.get('descripcion', ''), 1, 0, 'L')
+            pdf.cell(widths[2], 8, "UND", 1, 0, 'C')
+            pdf.cell(widths[3], 8, str(item.get('cantidad', 0)), 1, 0, 'C')
+            pdf.cell(widths[4], 8, str(item.get('peso', 0)), 1, 0, 'C')
+            pdf.cell(widths[5], 8, f"${item.get('precio_unitario', 0):,}", 1, 0, 'R')
+            pdf.cell(widths[6], 8, f"${item.get('impuestos', 0):,}", 1, 0, 'R')
+            pdf.cell(widths[7], 8, f"${item.get('valor_total', 0):,}", 1, 0, 'R')
+            pdf.ln()
+        
+        # Llenar filas vacías si hay pocas items
+        empty_rows = max(0, 15 - len(cotization_data['items']))
+        for _ in range(empty_rows):
+            pdf.set_x(x_start)
+            for width in widths:
+                pdf.cell(width, 8, "", 1, 0, 'C')
+            pdf.ln()
+        
+        # Totales
+        pdf.ln(5)
+        pdf.set_font("Arial", 'B', 10)
+        
+        # Notas (lado izquierdo)
+        pdf.cell(40, 8, "Notas", 1, 0, 'L')
+        pdf.cell(70, 8, "", 1, 1, 'L')  # Celda vacía para notas
+        
+        # Totales (lado derecho)
+        pdf.set_xy(120, pdf.get_y() - 8)
+        pdf.cell(30, 8, "Totales", 1, 0, 'C')
+        pdf.cell(40, 8, "", 1, 1, 'L')
+        
+        pdf.set_x(120)
+        pdf.set_font("Arial", size=9)
+        pdf.cell(30, 6, "Valor Subtotal:", 1, 0, 'L')
+        pdf.cell(40, 6, f"${cotization_data['subtotal']:,}", 1, 1, 'R')
+        
+        pdf.set_x(120)
+        pdf.cell(30, 6, "Valor impuestos:", 1, 0, 'L')
+        pdf.cell(40, 6, f"${cotization_data['impuestos']:,}", 1, 1, 'R')
+        
+        pdf.set_x(120)
+        pdf.set_font("Arial", 'B', 10)
+        pdf.cell(30, 8, "Total:", 1, 0, 'L')
+        pdf.cell(40, 8, f"${cotization_data['total']:,}", 1, 1, 'R')
+        
+        # Firmas
+        pdf.ln(10)
+        pdf.set_font("Arial", size=8)
+        
+        # Líneas para firmas
+        y_firma = pdf.get_y()
+        pdf.line(25, y_firma, 75, y_firma)  # Elaborado
+        pdf.line(85, y_firma, 135, y_firma)  # Aprobado  
+        pdf.line(145, y_firma, 195, y_firma)  # Recibido
+        
+        pdf.ln(3)
+        pdf.cell(50, 5, "Elaborado", ln=False, align='C')
+        pdf.cell(50, 5, "Aprobado", ln=False, align='C')
+        pdf.cell(50, 5, "Recibido", ln=False, align='C')
+        
+        pdf.ln(8)
+        pdf.set_font("Arial", size=6)
+        pdf.cell(0, 4, "ORIGINAL REIMPRESO", ln=True, align='L')
+        pdf.cell(0, 4, f"Página 1 de 1", ln=True, align='R')
+        
+        return pdf
+        
+    except Exception as e:
+        st.error(f"Error al generar PDF: {str(e)}")
+        return None
+
+# Función para detectar si una respuesta contiene información de cotización
+def is_cotization_response(response_text):
+    """Detecta si la respuesta contiene información de cotización"""
+    cotization_keywords = [
+        'cotización', 'cotizacion', 'precio', 'valor', '$', 'total',
+        'referencia', 'producto', 'inventario', 'disponibilidad',
+        'unidades', 'UND', 'tratada', 'inmunizada'
+    ]
+    
+    text_lower = response_text.lower()
+    return any(keyword.lower() in text_lower for keyword in cotization_keywords)
 
 # Título y descripción de la aplicación
 st.markdown("<h1 class='main-header'>Asistente Construinmuniza</h1>", unsafe_allow_html=True)
@@ -177,6 +429,9 @@ st.markdown("""
         </li>
         <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
             <span style="font-weight: 500; color: #BBDEFB;">¿Puedes darme el precio de PISO PARED 10X1.7X100M2 CEP en El Chagualo?</span>
+        </li>
+        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(255, 152, 0, 0.1); border-radius: 4px; border-left: 3px solid #FF9800;">
+            <span style="font-weight: 500; color: #FFE0B2;">Genera una cotización para 5 alfardas tratadas 12X300</span>
         </li>
     </ul>
 </div>
@@ -263,6 +518,7 @@ st.sidebar.markdown("### Gestión de conversación")
 # Botón para limpiar conversación
 if st.sidebar.button("🗑️ Limpiar conversación"):
     st.session_state.messages = []
+    st.session_state.last_cotization_data = None
     st.rerun()
 
 # Botón para guardar conversación en PDF
@@ -317,10 +573,36 @@ if st.sidebar.button("💾 Guardar conversación en PDF"):
         mime="application/pdf",
     )
 
+# Sección para generar PDF de cotización
+if st.session_state.last_cotization_data:
+    st.sidebar.markdown("### Última Cotización")
+    if st.sidebar.button("📄 Generar PDF de Cotización"):
+        with st.spinner("Generando PDF de cotización..."):
+            pdf = generate_cotization_pdf(st.session_state.last_cotization_data)
+            if pdf:
+                # Guardar el PDF en un archivo temporal
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                    pdf_path = tmp_file.name
+                    pdf.output(pdf_path)
+                
+                # Abrir y leer el archivo para la descarga
+                with open(pdf_path, "rb") as f:
+                    pdf_data = f.read()
+                
+                # Botón de descarga
+                st.sidebar.download_button(
+                    label="Descargar Cotización PDF",
+                    data=pdf_data,
+                    file_name=f"cotizacion_{st.session_state.last_cotization_data['numero_cotizacion']}.pdf",
+                    mime="application/pdf",
+                )
+                st.sidebar.success("PDF generado exitosamente!")
+
 # Botón para cerrar sesión
 if st.sidebar.button("Cerrar sesión"):
     st.session_state.is_configured = False
     st.session_state.agent_access_key = ""
+    st.session_state.last_cotization_data = None
     st.rerun()
 
 # Función para enviar consulta al agente
@@ -441,6 +723,33 @@ if prompt:
                 # Mostrar respuesta del asistente
                 response_text = response.get("response", "No se recibió respuesta del agente.")
                 st.markdown(response_text)
+                
+                # Verificar si la respuesta contiene información de cotización
+                if is_cotization_response(response_text):
+                    with st.spinner("Procesando datos de cotización..."):
+                        cotization_data = extract_cotization_data(response_text)
+                        
+                        # Guardar datos de cotización en session state
+                        if cotization_data['items']:  # Solo si hay items válidos
+                            st.session_state.last_cotization_data = cotization_data
+                            
+                            # Mostrar botón para generar PDF
+                            st.info("📄 Se detectó información de cotización. Puedes generar un PDF desde la barra lateral.")
+                            
+                            # Preview de la cotización
+                            with st.expander("Vista previa de la cotización"):
+                                st.write(f"**Número de cotización:** {cotization_data['numero_cotizacion']}")
+                                st.write(f"**Fecha:** {cotization_data['fecha']}")
+                                st.write(f"**Cliente:** {cotization_data['cliente']}")
+                                
+                                if cotization_data['items']:
+                                    st.write("**Productos:**")
+                                    for item in cotization_data['items']:
+                                        st.write(f"- {item['referencia']}: {item['descripcion']} - {item['cantidad']} UND - ${item['precio_unitario']:,}")
+                                    
+                                    st.write(f"**Subtotal:** ${cotization_data['subtotal']:,}")
+                                    st.write(f"**Impuestos:** ${cotization_data['impuestos']:,}")
+                                    st.write(f"**Total:** ${cotization_data['total']:,}")
                 
                 # Generar audio (siempre)
                 audio_html = None
