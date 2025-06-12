@@ -353,35 +353,22 @@ def generate_cotization_pdf(cotization_data):
         st.error(f"Error al generar PDF: {str(e)}")
         return None
 
-# Función mejorada para detectar si una respuesta contiene información de cotización
+# Función para detectar si una respuesta contiene solicitud específica de cotización
 def is_cotization_response(response_text):
-    """Detecta si la respuesta contiene información de cotización"""
-    # Palabras clave más específicas y con pesos
-    high_priority_keywords = ['precio', 'valor', 'cop', 'pesos', 'cotización', 'cotizacion']
-    medium_priority_keywords = ['total', 'referencia', 'producto', 'inventario', 'disponibilidad']
-    low_priority_keywords = ['unidades', 'UND', 'tratada', 'inmunizada', 'alfarda', 'piso', 'pared']
-    
+    """Detecta si la respuesta contiene solicitud específica de generar cotización"""
     text_lower = response_text.lower()
     
-    # Contar palabras clave con pesos
-    high_count = sum(1 for keyword in high_priority_keywords if keyword in text_lower)
-    medium_count = sum(1 for keyword in medium_priority_keywords if keyword in text_lower)
-    low_count = sum(1 for keyword in low_priority_keywords if keyword in text_lower)
-    
-    # Calcular puntuación ponderada
-    score = (high_count * 3) + (medium_count * 2) + (low_count * 1)
-    
-    # También verificar patrones específicos de precios
-    price_patterns = [
-        r'\$\s*\d{1,3}(?:[.,]\d{3})*',
-        r'\d{1,3}(?:[.,]\d{3})*\s*(?:pesos|cop)',
-        r'precio.*\d+',
+    # Solo detectar cotización cuando se solicite explícitamente generar una
+    cotization_requests = [
+        'genera una cotización',
+        'generar cotización',
+        'hacer una cotización',
+        'crear cotización',
+        'cotización para',
+        'genera cotización'
     ]
     
-    has_price_pattern = any(re.search(pattern, text_lower) for pattern in price_patterns)
-    
-    # Es cotización si tiene puntuación alta O tiene patrón de precio + alguna palabra clave
-    return score >= 6 or (has_price_pattern and score >= 3)
+    return any(request in text_lower for request in cotization_requests)
 
 # Título y descripción de la aplicación
 st.markdown("<h1 class='main-header'>Asistente Construinmuniza</h1>", unsafe_allow_html=True)
