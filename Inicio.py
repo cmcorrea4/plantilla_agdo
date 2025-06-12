@@ -354,9 +354,9 @@ def generate_cotization_pdf(cotization_data):
         return None
 
 # Función para detectar si se solicita generar cotización
-def is_cotization_response(response_text):
-    """Detecta si se solicita generar una cotización"""
-    text_lower = response_text.lower()
+def is_cotization_request(user_prompt):
+    """Detecta si el usuario solicita generar una cotización"""
+    text_lower = user_prompt.lower()
     
     # Detectar solicitudes de cotización con múltiples variantes
     cotization_requests = [
@@ -728,8 +728,8 @@ if prompt:
                 response_text = response.get("response", "No se recibió respuesta del agente.")
                 st.markdown(response_text)
                 
-                # Verificar si la respuesta contiene información de cotización
-                if is_cotization_response(response_text):
+                # Verificar si el USUARIO solicitó una cotización (revisar su pregunta, no la respuesta del LLM)
+                if is_cotization_request(prompt):
                     with st.spinner("Procesando datos de cotización..."):
                         cotization_data = extract_cotization_data(response_text)
                         
@@ -777,6 +777,9 @@ if prompt:
                                     st.write(f"**Subtotal:** ${cotization_data['subtotal']:,}")
                                     st.write(f"**Impuestos:** ${cotization_data['impuestos']:,}")
                                     st.write(f"**Total:** ${cotization_data['total']:,}")
+                        else:
+                            # Si el usuario pidió cotización pero no se pudieron extraer datos, mostrar mensaje
+                            st.warning("⚠️ Se solicitó generar cotización pero no se pudieron extraer todos los datos necesarios del precio proporcionado.")
                 
                 # Añadir respuesta al historial
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
