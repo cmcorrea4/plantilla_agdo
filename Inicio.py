@@ -353,19 +353,33 @@ def generate_cotization_pdf(cotization_data):
         st.error(f"Error al generar PDF: {str(e)}")
         return None
 
-# Función para detectar si una respuesta contiene solicitud específica de cotización
+# Función para detectar si se solicita generar cotización
 def is_cotization_response(response_text):
-    """Detecta si la respuesta contiene solicitud específica de generar cotización"""
+    """Detecta si se solicita generar una cotización"""
     text_lower = response_text.lower()
     
-    # Solo detectar cotización cuando se solicite explícitamente generar una
+    # Detectar solicitudes de cotización con múltiples variantes
     cotization_requests = [
         'genera una cotización',
         'generar cotización',
         'hacer una cotización',
         'crear cotización',
         'cotización para',
-        'genera cotización'
+        'genera cotización',
+        'realiza una cotización',
+        'realizar cotización',
+        'elabora una cotización',
+        'elaborar cotización',
+        'prepara una cotización',
+        'preparar cotización',
+        'dame una cotización',
+        'necesito una cotización',
+        'quiero una cotización',
+        'haz una cotización',
+        'haga una cotización',
+        'cotizar',
+        'cotizame',
+        'cotízame'
     ]
     
     return any(request in text_lower for request in cotization_requests)
