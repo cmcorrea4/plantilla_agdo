@@ -108,92 +108,123 @@ def extract_cotization_data(response_text):
     # Normalizar texto
     text_lower = response_text.lower()
     
-    # Buscar precios en diferentes formatos - MÁS ESPECÍFICOS
+    # Patrones más amplios para encontrar precios
     price_patterns = [
-        r'precio\s+unitario\s+es\s+de\s+(\d{1,3}(?:[.,]\d{3})*)',  # "precio unitario es de 51,792"
-        r'precio.*?(\d{1,3}(?:[.,]\d{3})*)\s*cop',  # "precio ... 51,792 COP"
-        r'\$\s*(\d{1,3}(?:[.,]\d{3})*)',  # "$51,792"
-        r'(\d{1,3}(?:[.,]\d{3})*)\s*cop',  # "51,792 COP"
-        r'es\s+de\s+(\d{1,3}(?:[.,]\d{3})*)',  # "es de 51,792"
+        r'(\d{1,3}(?:[.,]\d{3})+)\s*cop',  # 51,792 COP
+        r'\$\s*(\d{1,3}(?:[.,]\d{3})+)',   # $51,792
+        r'precio.*?(\d{1,3}(?:[.,]\d{3})+)',  # precio ... 51,792
+        r'cuesta.*?(\d{1,3}(?:[.,]\d{3})+)',  # cuesta ... 51,792
+        r'(\d{1,3}(?:[.,]\d{3})+)\s*pesos',   # 51,792 pesos
+        r'es\s+de\s+(\d{1,3}(?:[.,]\d{3})+)', # es de 51,792
+        r'total.*?(\d{1,3}(?:[.,]\d{3})+)',   # total ... 155,376
+        r'subtotal.*?(\d{1,3}(?:[.,]\d{3})+)', # subtotal ... 155,376
+        r'vale.*?(\d{1,3}(?:[.,]\d{3})+)',    # vale ... 51,792
+        r'por\s+(\d{1,3}(?:[.,]\d{3})+)',     # por 51,792
+        # Patrones para números sin separadores pero grandes
+        r'\b(\d{5,7})\b',  # 51792, 155376
     ]
     
-    # Buscar cantidades - MÁS ESPECÍFICOS
+    # Patrones para cantidades
     quantity_patterns = [
-        r'para\s+(\d+)\s+(?:alfardas|unidades|productos)',  # "para 10 alfardas"
-        r'(\d+)\s+unidades?\s*\*',  # "10 unidades *"
-        r'cantidad.*?(\d+)',  # "cantidad ... 10"
-        r'(\d+)\s+(?:alfardas|pisos|paredes)',  # "10 alfardas"
+        r'para\s+(\d+)\s+(?:alfardas|unidades|productos|items)',
+        r'(\d+)\s+(?:alfardas|unidades|uds?)\b',
+        r'cantidad.*?(\d+)',
+        r'(\d+)\s*x\s*',  # 3 x
+        r'x\s*(\d+)',     # x 3
+        r'(\d+)\s+(?:alfardas|pisos|paredes|tablas)',
     ]
     
-    precio = None
-    cantidad = 1  # Default
-    
-    # Extraer precio - MEJORADO
+    # Buscar precios
+    precios_encontrados = []
     for pattern in price_patterns:
         matches = re.findall(pattern, text_lower)
         for match in matches:
+            # Limpiar el número
             precio_str = match.replace(',', '').replace('.', '')
             try:
-                precio_temp = int(precio_str)
-                # Validar que sea un precio razonable (entre 1000 y 10000000)
-                if 1000 <= precio_temp <= 10000000:
-                    precio = precio_temp
-                    break
-            except:
+                precio = int(precio_str)
+                # Validar que sea un precio razonable
+                if 1000 <= precio <= 50000000:
+                    precios_encontrados.append(precio)
+            except ValueError:
                 continue
-        if precio:
-            break
     
-    # Extraer cantidad - MEJORADO
+    # Buscar cantidades
+    cantidades_encontradas = []
     for pattern in quantity_patterns:
         matches = re.findall(pattern, text_lower)
         for match in matches:
             try:
-                cantidad_temp = int(match)
-                if 1 <= cantidad_temp <= 1000:  # Validar rango razonable
-                    cantidad = cantidad_temp
-                    break
-            except:
+                cantidad = int(match)
+                if 1 <= cantidad <= 1000:
+                    cantidades_encontradas.append(cantidad)
+            except ValueError:
                 continue
-        if cantidad > 1:  # Si ya encontramos una cantidad válida, usar esa
-            break
     
-    # Extraer descripción del producto - MEJORADO
+    # Determinar producto basándose en el texto
     descripcion = "PRODUCTO"
     referencia = "REF001"
     
-    # Buscar productos específicos
-    if 'piso pared' in text_lower:
+    if 'alfarda' in text_lower:
+        if '12x300' in text_lower or ('12' in text_lower and '300' in text_lower):
+            descripcion = "ALFARDA TRATADA 12X300"
+            referencia = "RA40012300"
+        else:
+            descripcion = "ALFARDA TRATADA"
+            referencia = "RA001"
+    elif 'piso' in text_lower and 'pared' in text_lower:
         if '10x1.7x100' in text_lower:
             descripcion = "PISO PARED 10X1.7X100M2 CEP"
             referencia = "PP10017100"
         else:
             descripcion = "PISO PARED"
             referencia = "PP001"
-    elif 'alfarda' in text_lower:
-        if '12x300' in text_lower:
-            descripcion = "ALFARDA TRATADA 12X300"
-            referencia = "RA40012300"
-        else:
-            descripcion = "ALFARDA TRATADA"
-            referencia = "RA001"
+    elif any(word in text_lower for word in ['madera', 'tabla', 'listón', 'tablón']):
+        descripcion = "MADERA TRATADA"
+        referencia = "MT001"
+    elif any(word in text_lower for word in ['viga', 'vigas']):
+        descripcion = "VIGA TRATADA"
+        referencia = "VT001"
     
-    # Si encontramos precio válido, crear el item
-    if precio and precio > 0:
+    # Si encontramos al menos un precio, crear el item
+    if precios_encontrados:
+        # Usar el precio más relevante
+        precios_ordenados = sorted(set(precios_encontrados))
+        precio_unitario = precios_ordenados[0]  # El menor suele ser el unitario
+        
+        # Usar cantidad si se encontró, sino usar 1
+        cantidad = cantidades_encontradas[0] if cantidades_encontradas else 1
+        
+        # Calcular total
+        total_calculado = precio_unitario * cantidad
+        
+        # Si hay múltiples precios, verificar si alguno corresponde al total
+        if len(precios_ordenados) > 1:
+            for precio in precios_ordenados[1:]:
+                # Si encontramos un precio que podría ser el total
+                if abs(precio - total_calculado) <= total_calculado * 0.1:  # 10% tolerancia
+                    total_calculado = precio
+                    break
+                elif precio > precio_unitario * cantidad:
+                    # Podría ser el total, recalcular precio unitario
+                    total_calculado = precio
+                    if cantidad > 1:
+                        precio_unitario = precio // cantidad
+        
         item = {
             'referencia': referencia,
             'descripcion': descripcion,
             'cantidad': cantidad,
-            'precio_unitario': precio,
+            'precio_unitario': precio_unitario,
             'impuestos': 0,
-            'valor_total': precio * cantidad,
-            'peso': 186  # Peso por defecto
+            'valor_total': total_calculado,
+            'peso': 186
         }
         
         cotization_data['items'].append(item)
-        cotization_data['subtotal'] = item['valor_total']
+        cotization_data['subtotal'] = total_calculado
         cotization_data['impuestos'] = 0
-        cotization_data['total'] = cotization_data['subtotal']
+        cotization_data['total'] = total_calculado
     
     return cotization_data
 
@@ -387,7 +418,12 @@ def is_cotization_request(user_prompt):
         'haga una cotización',
         'cotizar',
         'cotizame',
-        'cotízame'
+        'cotízame',
+        'precio',
+        'cuanto cuesta',
+        'cuánto cuesta',
+        'valor',
+        'presupuesto'
     ]
     
     return any(request in text_lower for request in cotization_requests)
@@ -745,28 +781,70 @@ if prompt:
                 response_text = response.get("response", "No se recibió respuesta del agente.")
                 st.markdown(response_text)
                 
-                # Verificar si el USUARIO solicitó una cotización (revisar su pregunta, no la respuesta del LLM)
+                # Verificar si el USUARIO solicitó una cotización
                 if is_cotization_request(prompt):
                     with st.spinner("Procesando datos de cotización..."):
                         cotization_data = extract_cotization_data(response_text)
                         
-                        # Debug temporal - mostrar datos extraídos
-                        st.write("🔍 **Debug - Datos extraídos:**")
-                        st.json(cotization_data)
-                        
-                        # Guardar datos de cotización en session state si son válidos
+                        # Verificar si se encontraron datos válidos
                         if cotization_data['items'] and len(cotization_data['items']) > 0:
                             st.session_state.last_cotization_data = cotization_data
                             
-                            # Mostrar mensaje de éxito
+                            # Mostrar resumen de la cotización extraída
                             st.success("✅ Cotización generada exitosamente!")
+                            
+                            item = cotization_data['items'][0]
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.metric("Producto", item['descripcion'])
+                            with col2:
+                                st.metric("Cantidad", f"{item['cantidad']} UND")
+                            with col3:
+                                st.metric("Total", f"${cotization_data['total']:,} COP")
+                            
                             st.info("📄 Puedes generar el PDF desde la barra lateral.")
                             
-                            # Debug temporal - confirmar que se guardó
-                            st.write("✅ **Datos guardados en session_state**")
                         else:
-                            # Si el usuario pidió cotización pero no se pudieron extraer datos, mostrar mensaje
-                            st.warning("⚠️ Se solicitó generar cotización pero no se pudieron extraer todos los datos necesarios del precio proporcionado.")
+                            # Si no se pudieron extraer datos, ofrecer opción manual
+                            st.warning("⚠️ No se pudieron extraer automáticamente todos los datos de la cotización.")
+                            
+                            with st.expander("📝 Crear cotización manualmente"):
+                                st.write("Basándome en la respuesta, puedes completar estos datos:")
+                                
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    manual_descripcion = st.text_input("Descripción del producto:", value="PRODUCTO")
+                                    manual_cantidad = st.number_input("Cantidad:", min_value=1, value=1)
+                                    manual_precio = st.number_input("Precio unitario:", min_value=0, value=0)
+                                
+                                with col2:
+                                    manual_referencia = st.text_input("Referencia:", value="REF001")
+                                    manual_cliente = st.text_input("Cliente:", value="CONSUMIDOR FINAL")
+                                
+                                if st.button("Crear cotización manual"):
+                                    if manual_precio > 0:
+                                        manual_cotization = {
+                                            'items': [{
+                                                'referencia': manual_referencia,
+                                                'descripcion': manual_descripcion,
+                                                'cantidad': manual_cantidad,
+                                                'precio_unitario': manual_precio,
+                                                'impuestos': 0,
+                                                'valor_total': manual_precio * manual_cantidad,
+                                                'peso': 186
+                                            }],
+                                            'subtotal': manual_precio * manual_cantidad,
+                                            'impuestos': 0,
+                                            'total': manual_precio * manual_cantidad,
+                                            'cliente': manual_cliente,
+                                            'fecha': datetime.now().strftime('%d/%m/%Y'),
+                                            'numero_cotizacion': f"CCV-{int(time.time())}"[-8:]
+                                        }
+                                        st.session_state.last_cotization_data = manual_cotization
+                                        st.success("✅ Cotización manual creada!")
+                                        st.rerun()
+                                    else:
+                                        st.error("Por favor ingresa un precio válido")
                 
                 # Añadir respuesta al historial
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
