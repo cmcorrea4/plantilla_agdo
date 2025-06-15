@@ -625,7 +625,7 @@ if st.sidebar.button("💾 Guardar conversación en PDF"):
     )
 
 # Sección para generar PDF de cotización - SIEMPRE VISIBLE si hay datos
-if st.session_state.last_cotization_data:
+if st.session_state.last_cotization_data and st.session_state.last_cotization_data.get('items'):
     st.sidebar.markdown("### 📄 Última Cotización")
     
     # Mostrar información básica de la cotización
@@ -635,28 +635,41 @@ if st.session_state.last_cotization_data:
         st.sidebar.write(f"**Producto:** {item['descripcion']}")
         st.sidebar.write(f"**Cantidad:** {item['cantidad']} UND")
         st.sidebar.write(f"**Total:** ${cotization_info['total']:,} COP")
+        st.sidebar.write(f"**Número:** {cotization_info['numero_cotizacion']}")
     
-    if st.sidebar.button("📄 Generar PDF de Cotización"):
-        with st.spinner("Generando PDF de cotización..."):
-            pdf = generate_cotization_pdf(st.session_state.last_cotization_data)
-            if pdf:
-                # Guardar el PDF en un archivo temporal
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-                    pdf_path = tmp_file.name
-                    pdf.output(pdf_path)
-                
-                # Abrir y leer el archivo para la descarga
-                with open(pdf_path, "rb") as f:
-                    pdf_data = f.read()
-                
-                # Botón de descarga
-                st.sidebar.download_button(
-                    label="⬇️ Descargar Cotización PDF",
-                    data=pdf_data,
-                    file_name=f"cotizacion_{st.session_state.last_cotization_data['numero_cotizacion']}.pdf",
-                    mime="application/pdf",
-                )
-                st.sidebar.success("PDF generado exitosamente!")
+    # Usar columnas para el botón
+    col_pdf1, col_pdf2 = st.sidebar.columns([1, 1])
+    
+    with col_pdf1:
+        if st.button("📄 Generar PDF", key="generate_pdf"):
+            with st.spinner("Generando PDF..."):
+                pdf = generate_cotization_pdf(st.session_state.last_cotization_data)
+                if pdf:
+                    # Guardar el PDF en un archivo temporal
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                        pdf_path = tmp_file.name
+                        pdf.output(pdf_path)
+                    
+                    # Abrir y leer el archivo para la descarga
+                    with open(pdf_path, "rb") as f:
+                        pdf_data = f.read()
+                    
+                    # Guardar PDF en session state para descarga
+                    st.session_state.pdf_data = pdf_data
+                    st.session_state.pdf_filename = f"cotizacion_{st.session_state.last_cotization_data['numero_cotizacion']}.pdf"
+                    st.sidebar.success("PDF generado!")
+                    st.rerun()
+    
+    # Mostrar botón de descarga si hay PDF generado
+    if hasattr(st.session_state, 'pdf_data') and st.session_state.pdf_data:
+        with col_pdf2:
+            st.download_button(
+                label="⬇️ Descargar",
+                data=st.session_state.pdf_data,
+                file_name=st.session_state.pdf_filename,
+                mime="application/pdf",
+                key="download_pdf"
+            )
 
 # Botón para cerrar sesión
 if st.sidebar.button("Cerrar sesión"):
@@ -803,6 +816,10 @@ if prompt:
                                 st.metric("Total", f"${cotization_data['total']:,} COP")
                             
                             st.info("📄 Puedes generar el PDF desde la barra lateral.")
+                            
+                            # Forzar actualización de la interfaz para mostrar el botón del PDF
+                            time.sleep(0.5)  # Pequeña pausa para asegurar que se vean los mensajes
+                            st.rerun()
                             
                         else:
                             # Si no se pudieron extraer datos, ofrecer opción manual
