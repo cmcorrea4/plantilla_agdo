@@ -84,13 +84,6 @@ st.markdown("""
     .css-1outpf7 {
         color: #FFFFFF !important;
     }
-    .excel-info {
-        background-color: #1a1a2e;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 4px solid #16537e;
-        margin-bottom: 20px;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -105,14 +98,27 @@ def load_excel_data():
             return None, f"Error: No se encontró el archivo '{file_path}'"
         
         # Leer todas las hojas del archivo Excel
-        excel_file = pd.ExcelFile(file_path)
-        all_sheets = {}
-        
-        for sheet_name in excel_file.sheet_names:
-            df = pd.read_excel(file_path, sheet_name=sheet_name)
-            all_sheets[sheet_name] = df
-        
-        return all_sheets, None
+        try:
+            excel_file = pd.ExcelFile(file_path)
+            all_sheets = {}
+            
+            for sheet_name in excel_file.sheet_names:
+                try:
+                    df = pd.read_excel(file_path, sheet_name=sheet_name)
+                    # Limpiar nombres de columnas (eliminar espacios extra)
+                    df.columns = df.columns.str.strip()
+                    all_sheets[sheet_name] = df
+                except Exception as sheet_error:
+                    st.warning(f"No se pudo cargar la hoja '{sheet_name}': {str(sheet_error)}")
+                    continue
+            
+            if not all_sheets:
+                return None, "No se pudo cargar ninguna hoja del archivo Excel"
+                
+            return all_sheets, None
+            
+        except Exception as read_error:
+            return None, f"Error al leer el archivo Excel: {str(read_error)}"
         
     except Exception as e:
         return None, f"Error al cargar el archivo Excel: {str(e)}"
@@ -143,8 +149,13 @@ def format_excel_context(excel_data):
                 row_data = []
                 for col in df.columns:
                     value = row[col]
-                    if pd.notna(value):
-                        row_data.append(f"{col}: {value}")
+                    # Manejar valores nulos y diferentes tipos de datos
+                    if pd.notna(value) and str(value).strip() != "":
+                        # Convertir a string y limpiar
+                        clean_value = str(value).strip()
+                        if clean_value:
+                            row_data.append(f"{col}: {clean_value}")
+                
                 if row_data:
                     context_parts.append(f"- {' | '.join(row_data)}")
         else:
@@ -171,17 +182,15 @@ def initialize_session_vars():
 # Inicializar variables
 initialize_session_vars()
 
-# Cargar datos del Excel al inicio
+# Cargar datos del Excel al inicio (silenciosamente)
 if st.session_state.excel_data is None:
-    with st.spinner("Cargando información del archivo Excel..."):
-        excel_data, error = load_excel_data()
-        if error:
-            st.error(error)
-            st.session_state.excel_data = {}
-            st.session_state.excel_context = ""
-        else:
-            st.session_state.excel_data = excel_data
-            st.session_state.excel_context = format_excel_context(excel_data)
+    excel_data, error = load_excel_data()
+    if error:
+        st.session_state.excel_data = {}
+        st.session_state.excel_context = ""
+    else:
+        st.session_state.excel_data = excel_data
+        st.session_state.excel_context = format_excel_context(excel_data)
 
 # Función para generar audio a partir de texto
 def text_to_speech(text):
@@ -210,25 +219,6 @@ def text_to_speech(text):
 
 # Título y descripción de la aplicación
 st.markdown("<h1 class='main-header'>Asistente Construinmuniza</h1>", unsafe_allow_html=True)
-
-# Mostrar información del archivo Excel cargado
-if st.session_state.excel_data:
-    with st.expander("📊 Información del archivo Excel cargado", expanded=False):
-        st.markdown("<div class='excel-info'>", unsafe_allow_html=True)
-        st.success("✅ Archivo 'GUION PARA IA LISTADO.xlsx' cargado exitosamente")
-        
-        # Mostrar resumen de las hojas
-        for sheet_name, df in st.session_state.excel_data.items():
-            st.write(f"**{sheet_name}:** {len(df)} registros, {len(df.columns)} columnas")
-            
-            # Mostrar las primeras filas de cada hoja
-            if not df.empty:
-                with st.expander(f"Ver datos de '{sheet_name}'"):
-                    st.dataframe(df.head(10))
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-else:
-    st.warning("⚠️ No se pudo cargar el archivo Excel. Verifica que 'GUION PARA IA LISTADO.xlsx' esté en el directorio de la aplicación.")
 
 # Pantalla de configuración inicial si aún no se ha configurado
 if not st.session_state.is_configured:
@@ -280,9 +270,6 @@ st.markdown("""
         <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
             <span style="font-weight: 500; color: #BBDEFB;">¿Puedes darme el precio de PISO PARED 10X1.7X100M2 CEP en El Chagualo?</span>
         </li>
-        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
-            <span style="font-weight: 500; color: #BBDEFB;">¿Qué información tienes sobre los productos en el archivo Excel?</span>
-        </li>
     </ul>
 </div>
 """, unsafe_allow_html=True)
@@ -295,13 +282,6 @@ st.sidebar.success("✅ Configuración cargada")
 with st.sidebar.expander("Ver configuración actual"):
     st.code(f"Endpoint: {st.session_state.agent_endpoint}\nClave de acceso: {'*'*10}")
 
-# Mostrar información del Excel en la sidebar
-if st.session_state.excel_data:
-    with st.sidebar.expander("📊 Archivo Excel"):
-        st.success("✅ GUION PARA IA LISTADO.xlsx")
-        for sheet_name, df in st.session_state.excel_data.items():
-            st.write(f"**{sheet_name}:** {len(df)} registros")
-
 # Ajustes avanzados
 with st.sidebar.expander("Ajustes avanzados"):
     temperature = st.slider("Temperatura", min_value=0.0, max_value=1.0, value=0.2, step=0.1,
@@ -309,9 +289,6 @@ with st.sidebar.expander("Ajustes avanzados"):
     
     max_tokens = st.slider("Longitud máxima", min_value=100, max_value=2000, value=1000, step=100,
                           help="Número máximo de tokens en la respuesta.")
-    
-    include_excel_context = st.checkbox("Incluir contexto del Excel", value=True, 
-                                       help="Incluir información del archivo Excel en las consultas")
 
 # Sección para probar conexión con el agente
 with st.sidebar.expander("Probar conexión"):
@@ -464,8 +441,8 @@ def query_agent(prompt, history=None):
         # Preparar los mensajes en formato OpenAI
         messages = []
         
-        # Agregar contexto del Excel si está habilitado
-        if include_excel_context and st.session_state.excel_context:
+        # Agregar contexto del Excel automáticamente si está disponible
+        if st.session_state.excel_context:
             system_message = {
                 "role": "system", 
                 "content": f"""Eres un asistente de Construinmuniza. Utiliza la siguiente información para responder preguntas sobre productos, inventario, precios y servicios:
