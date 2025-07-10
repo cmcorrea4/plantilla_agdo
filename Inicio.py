@@ -20,25 +20,25 @@ st.set_page_config(
 # Establecer tema claro mediante CSS personalizado
 st.markdown("""
 <style>
-    /* Tema claro personalizado */
+    /* Tema claro con colores Construinmuniza */
     body {
         color: #2C3E50;
-        background-color: #F8F9FA;
+        background-color: #FAFAFA;
     }
     .stApp {
-        background-color: #F8F9FA;
+        background-color: #FAFAFA;
     }
     
     /* Inputs y controles */
     .stTextInput>div>div>input {
         background-color: #FFFFFF;
         color: #2C3E50;
-        border: 1px solid #E3E8EF;
+        border: 1px solid #E0E6E8;
         border-radius: 8px;
     }
     .stTextInput>div>div>input:focus {
-        border-color: #3498DB;
-        box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        border-color: #1B5E20;
+        box-shadow: 0 0 0 2px rgba(27, 94, 32, 0.2);
     }
     
     .stSlider>div>div>div {
@@ -48,13 +48,13 @@ st.markdown("""
     .stSelectbox>div>div>div {
         background-color: #FFFFFF;
         color: #2C3E50;
-        border: 1px solid #E3E8EF;
+        border: 1px solid #E0E6E8;
         border-radius: 8px;
     }
     
-    /* Botones */
+    /* Botones con colores Construinmuniza */
     .stButton > button {
-        background-color: #3498DB;
+        background-color: #1B5E20;
         color: white;
         border: none;
         border-radius: 8px;
@@ -63,25 +63,25 @@ st.markdown("""
         transition: all 0.3s ease;
     }
     .stButton > button:hover {
-        background-color: #2980B9;
+        background-color: #2E7D32;
         transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+        box-shadow: 0 4px 8px rgba(27, 94, 32, 0.3);
     }
     
-    /* Sidebar */
+    /* Sidebar con colores Construinmuniza */
     .css-1d391kg, .css-12oz5g7, section[data-testid="stSidebar"] {
         background-color: #FFFFFF;
-        border-right: 1px solid #E3E8EF;
+        border-right: 1px solid #E0E6E8;
     }
     
-    /* Estilos personalizados para el asistente */
+    /* Estilos personalizados para el asistente con branding Construinmuniza */
     .main-header {
         font-size: 2.8rem;
         color: #2C3E50;
         text-align: center;
         margin-bottom: 2rem;
         font-weight: 700;
-        background: linear-gradient(135deg, #3498DB, #2C3E50);
+        background: linear-gradient(135deg, #1B5E20, #FFC107);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -90,7 +90,7 @@ st.markdown("""
     
     .subheader {
         font-size: 1.3rem;
-        color: #34495E;
+        color: #2E7D32;
         margin-bottom: 1rem;
         font-weight: 500;
     }
@@ -100,8 +100,9 @@ st.markdown("""
         align-items: center;
         margin-top: 10px;
         padding: 8px;
-        background-color: #F1F3F4;
+        background-color: #F1F8E9;
         border-radius: 8px;
+        border: 1px solid #C8E6C9;
     }
     
     .footer {
@@ -109,14 +110,14 @@ st.markdown("""
         bottom: 0;
         width: 100%;
         background-color: #FFFFFF;
-        border-top: 1px solid #E3E8EF;
+        border-top: 1px solid #E0E6E8;
         text-align: center;
         padding: 10px;
         font-size: 0.8rem;
-        color: #7F8C8D;
+        color: #2E7D32;
     }
     
-    /* Títulos en la barra lateral */
+    /* Títulos en la barra lateral con colores Construinmuniza */
     .sidebar .sidebar-content h1, 
     .sidebar .sidebar-content h2, 
     .sidebar .sidebar-content h3,
@@ -124,92 +125,92 @@ st.markdown("""
     section[data-testid="stSidebar"] h1,
     section[data-testid="stSidebar"] h2,
     section[data-testid="stSidebar"] h3 {
-        color: #2C3E50 !important;
+        color: #1B5E20 !important;
         font-weight: 600;
     }
     
-    /* Ejemplos de preguntas con mejor diseño */
+    /* Ejemplos de preguntas con tema Construinmuniza */
     .example-questions {
-        background: linear-gradient(135deg, #F8F9FA 0%, #E8F4FD 100%);
+        background: linear-gradient(135deg, #FAFAFA 0%, #F1F8E9 100%);
         border-radius: 12px;
         padding: 1.5rem;
         margin-bottom: 2rem;
-        border: 1px solid #E3F2FD;
+        border: 1px solid #C8E6C9;
     }
     
     .example-questions p {
-        color: #2980B9 !important;
+        color: #2E7D32 !important;
         font-weight: 500;
     }
     
     .example-questions li {
-        background: linear-gradient(135deg, #FFFFFF 0%, #F1F8FF 100%) !important;
-        border: 1px solid #E3F2FD !important;
+        background: linear-gradient(135deg, #FFFFFF 0%, #F9FBE7 100%) !important;
+        border: 1px solid #C8E6C9 !important;
         transition: all 0.3s ease;
         cursor: pointer;
     }
     
     .example-questions li:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
-        border-color: #3498DB !important;
+        box-shadow: 0 4px 12px rgba(27, 94, 32, 0.15);
+        border-color: #1B5E20 !important;
     }
     
     .example-questions span {
         color: #2C3E50 !important;
     }
     
-    /* Chat messages */
+    /* Chat messages con tema Construinmuniza */
     .stChatMessage {
         background-color: #FFFFFF;
-        border: 1px solid #E3E8EF;
+        border: 1px solid #E0E6E8;
         border-radius: 12px;
         margin-bottom: 1rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 4px rgba(27, 94, 32, 0.05);
     }
     
-    /* Expanders */
+    /* Expanders con colores Construinmuniza */
     .streamlit-expanderHeader {
-        background-color: #F8F9FA;
-        color: #2C3E50;
-        border: 1px solid #E3E8EF;
+        background-color: #F1F8E9;
+        color: #1B5E20;
+        border: 1px solid #C8E6C9;
         border-radius: 8px;
     }
     
-    /* Success/Error/Info messages */
+    /* Success/Error/Info messages con branding */
     .stSuccess {
-        background-color: #D5F4E6;
-        color: #155724;
-        border: 1px solid #C3E9D0;
+        background-color: #E8F5E8;
+        color: #2E7D32;
+        border: 1px solid #A5D6A7;
     }
     
     .stError {
-        background-color: #F8D7DA;
-        color: #721C24;
-        border: 1px solid #F1B0B7;
+        background-color: #FFEBEE;
+        color: #C62828;
+        border: 1px solid #EF9A9A;
     }
     
     .stInfo {
-        background-color: #CCE7FF;
-        color: #004085;
-        border: 1px solid #99D3FF;
+        background-color: #FFF3C4;
+        color: #E65100;
+        border: 1px solid #FFE082;
     }
     
     /* Code blocks */
     .stCode {
-        background-color: #F8F9FA;
-        border: 1px solid #E9ECEF;
+        background-color: #F9F9F9;
+        border: 1px solid #E0E6E8;
         color: #2C3E50;
     }
     
-    /* Spinner */
+    /* Spinner con color Construinmuniza */
     .stSpinner {
-        color: #3498DB;
+        color: #1B5E20;
     }
     
-    /* Tabs */
+    /* Tabs con tema Construinmuniza */
     .stTabs [data-baseweb="tab-list"] {
-        background-color: #F8F9FA;
+        background-color: #F1F8E9;
     }
     
     .stTabs [data-baseweb="tab"] {
@@ -217,27 +218,27 @@ st.markdown("""
     }
     
     .stTabs [aria-selected="true"] {
-        background-color: #3498DB;
+        background-color: #1B5E20;
         color: white;
     }
     
-    /* Custom scrollbar */
+    /* Custom scrollbar con colores Construinmuniza */
     ::-webkit-scrollbar {
         width: 8px;
     }
     
     ::-webkit-scrollbar-track {
-        background: #F1F1F1;
+        background: #F1F8E9;
         border-radius: 4px;
     }
     
     ::-webkit-scrollbar-thumb {
-        background: #BDC3C7;
+        background: #A5D6A7;
         border-radius: 4px;
     }
     
     ::-webkit-scrollbar-thumb:hover {
-        background: #95A5A6;
+        background: #81C784;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -280,7 +281,7 @@ def text_to_speech(text):
         '''
         return audio_html
     except Exception as e:
-        return f"<div class='error' style='color: #E74C3C; padding: 8px; background-color: #FADBD8; border-radius: 4px;'>Error al generar audio: {str(e)}</div>"
+        return f"<div class='error' style='color: #C62828; padding: 8px; background-color: #FFEBEE; border-radius: 4px; border: 1px solid #EF9A9A;'>Error al generar audio: {str(e)}</div>"
 
 # Título y descripción de la aplicación
 st.markdown("<h1 class='main-header'>🌲 Asistente Construinmuniza</h1>", unsafe_allow_html=True)
@@ -463,10 +464,10 @@ if st.sidebar.button("💾 Guardar conversación en PDF"):
     pdf.set_font("Arial", size=12)
     for msg in st.session_state.messages:
         if msg["role"] == "user":
-            pdf.set_text_color(52, 73, 94)  # Color azul oscuro para usuario
+            pdf.set_text_color(27, 94, 32)  # Verde Construinmuniza para usuario
             pdf.cell(200, 10, "Usuario:", ln=True)
         else:
-            pdf.set_text_color(52, 152, 219)  # Color azul para asistente
+            pdf.set_text_color(46, 125, 50)  # Verde más claro para asistente
             pdf.cell(200, 10, "Asistente:", ln=True)
         
         pdf.set_text_color(44, 62, 80)  # Color oscuro para el contenido
