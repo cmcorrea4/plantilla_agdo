@@ -17,70 +17,227 @@ st.set_page_config(
     menu_items=None
 )
 
-# Establecer tema oscuro mediante CSS personalizado para versiones anteriores
+# Establecer tema claro mediante CSS personalizado
 st.markdown("""
 <style>
-    /* Tema oscuro personalizado para versiones anteriores de Streamlit */
+    /* Tema claro personalizado */
     body {
-        color: #fafafa;
-        background-color: #0e1117;
+        color: #2C3E50;
+        background-color: #F8F9FA;
     }
     .stApp {
-        background-color: #0e1117;
-    }
-    .stTextInput>div>div>input {
-        background-color: #262730;
-        color: white;
-    }
-    .stSlider>div>div>div {
-        color: white;
-    }
-    .stSelectbox>div>div>div {
-        background-color: #262730;
-        color: white;
-    }
-    #div.stButton > button:first-child {
-    #    background-color: #1E88E5;
-    #    color: white;
-    #}
-    .css-1d391kg, .css-12oz5g7 {
-        background-color: #262730;
+        background-color: #F8F9FA;
     }
     
-    /* Estilos personalizados para el asistente - Todos los títulos en BLANCO */
+    /* Inputs y controles */
+    .stTextInput>div>div>input {
+        background-color: #FFFFFF;
+        color: #2C3E50;
+        border: 1px solid #E3E8EF;
+        border-radius: 8px;
+    }
+    .stTextInput>div>div>input:focus {
+        border-color: #3498DB;
+        box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    }
+    
+    .stSlider>div>div>div {
+        color: #2C3E50;
+    }
+    
+    .stSelectbox>div>div>div {
+        background-color: #FFFFFF;
+        color: #2C3E50;
+        border: 1px solid #E3E8EF;
+        border-radius: 8px;
+    }
+    
+    /* Botones */
+    .stButton > button {
+        background-color: #3498DB;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    .stButton > button:hover {
+        background-color: #2980B9;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+    }
+    
+    /* Sidebar */
+    .css-1d391kg, .css-12oz5g7, section[data-testid="stSidebar"] {
+        background-color: #FFFFFF;
+        border-right: 1px solid #E3E8EF;
+    }
+    
+    /* Estilos personalizados para el asistente */
     .main-header {
-        font-size: 2.5rem;
-        color: #FFFFFF;
+        font-size: 2.8rem;
+        color: #2C3E50;
         text-align: center;
         margin-bottom: 2rem;
-        font-weight: bold;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        font-weight: 700;
+        background: linear-gradient(135deg, #3498DB, #2C3E50);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: none;
     }
+    
     .subheader {
-        font-size: 1.5rem;
-        color: #FFFFFF;
+        font-size: 1.3rem;
+        color: #34495E;
         margin-bottom: 1rem;
+        font-weight: 500;
     }
+    
     .audio-controls {
         display: flex;
         align-items: center;
         margin-top: 10px;
+        padding: 8px;
+        background-color: #F1F3F4;
+        border-radius: 8px;
     }
+    
     .footer {
         position: fixed;
         bottom: 0;
         width: 100%;
-        background-color: #0e1117;
+        background-color: #FFFFFF;
+        border-top: 1px solid #E3E8EF;
         text-align: center;
         padding: 10px;
         font-size: 0.8rem;
+        color: #7F8C8D;
     }
-    /* Asegurar que todos los títulos en la barra lateral también sean blancos */
+    
+    /* Títulos en la barra lateral */
     .sidebar .sidebar-content h1, 
     .sidebar .sidebar-content h2, 
     .sidebar .sidebar-content h3,
-    .css-1outpf7 {
-        color: #FFFFFF !important;
+    .css-1outpf7,
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3 {
+        color: #2C3E50 !important;
+        font-weight: 600;
+    }
+    
+    /* Ejemplos de preguntas con mejor diseño */
+    .example-questions {
+        background: linear-gradient(135deg, #F8F9FA 0%, #E8F4FD 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid #E3F2FD;
+    }
+    
+    .example-questions p {
+        color: #2980B9 !important;
+        font-weight: 500;
+    }
+    
+    .example-questions li {
+        background: linear-gradient(135deg, #FFFFFF 0%, #F1F8FF 100%) !important;
+        border: 1px solid #E3F2FD !important;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .example-questions li:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.15);
+        border-color: #3498DB !important;
+    }
+    
+    .example-questions span {
+        color: #2C3E50 !important;
+    }
+    
+    /* Chat messages */
+    .stChatMessage {
+        background-color: #FFFFFF;
+        border: 1px solid #E3E8EF;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    /* Expanders */
+    .streamlit-expanderHeader {
+        background-color: #F8F9FA;
+        color: #2C3E50;
+        border: 1px solid #E3E8EF;
+        border-radius: 8px;
+    }
+    
+    /* Success/Error/Info messages */
+    .stSuccess {
+        background-color: #D5F4E6;
+        color: #155724;
+        border: 1px solid #C3E9D0;
+    }
+    
+    .stError {
+        background-color: #F8D7DA;
+        color: #721C24;
+        border: 1px solid #F1B0B7;
+    }
+    
+    .stInfo {
+        background-color: #CCE7FF;
+        color: #004085;
+        border: 1px solid #99D3FF;
+    }
+    
+    /* Code blocks */
+    .stCode {
+        background-color: #F8F9FA;
+        border: 1px solid #E9ECEF;
+        color: #2C3E50;
+    }
+    
+    /* Spinner */
+    .stSpinner {
+        color: #3498DB;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: #F8F9FA;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        color: #2C3E50;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: #3498DB;
+        color: white;
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #F1F1F1;
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: #BDC3C7;
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: #95A5A6;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -115,7 +272,7 @@ def text_to_speech(text):
         audio_base64 = base64.b64encode(audio_buffer.read()).decode()
         audio_html = f'''
         <div class="audio-controls">
-            <audio controls>
+            <audio controls style="width: 100%; height: 35px;">
                 <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
                 Tu navegador no soporta el elemento de audio.
             </audio>
@@ -123,91 +280,110 @@ def text_to_speech(text):
         '''
         return audio_html
     except Exception as e:
-        return f"<div class='error'>Error al generar audio: {str(e)}</div>"
+        return f"<div class='error' style='color: #E74C3C; padding: 8px; background-color: #FADBD8; border-radius: 4px;'>Error al generar audio: {str(e)}</div>"
 
 # Título y descripción de la aplicación
-st.markdown("<h1 class='main-header'>Asistente Construinmuniza</h1>", unsafe_allow_html=True)
+st.markdown("<h1 class='main-header'>🌲 Asistente Construinmuniza</h1>", unsafe_allow_html=True)
 
 # Pantalla de configuración inicial si aún no se ha configurado
 if not st.session_state.is_configured:
-    st.markdown("<h2 class='subheader'>Acceso al Asistente</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 class='subheader'>🔐 Acceso al Asistente</h2>", unsafe_allow_html=True)
     
-    st.info("Por favor ingresa tu clave de acceso al asistente digital")
-    
-    # Solo solicitar la clave de acceso
-    agent_access_key = st.text_input(
-        "Clave de Acceso", 
-        type="password",
-        placeholder="Ingresa tu clave de acceso al asistente",
-        help="Tu clave de acceso para autenticar las solicitudes"
-    )
-    
-    if st.button("Iniciar sesión"):
-        if not agent_access_key:
-            st.error("Por favor, ingresa la clave de acceso")
-        else:
-            # Guardar configuración en session_state
-            st.session_state.agent_access_key = agent_access_key
-            st.session_state.is_configured = True
-            st.success("Clave configurada")  # Cambio de mensaje aquí
-            time.sleep(1)  # Breve pausa para mostrar el mensaje de éxito
-            st.rerun()
+    # Container con mejor estilo para el login
+    with st.container():
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown("""
+            <div style="background: linear-gradient(135deg, #FFFFFF 0%, #F8F9FA 100%); 
+                        padding: 2rem; border-radius: 12px; border: 1px solid #E3E8EF; 
+                        box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center;">
+                <h3 style="color: #2C3E50; margin-bottom: 1rem;">Bienvenido</h3>
+                <p style="color: #7F8C8D; margin-bottom: 1.5rem;">
+                    Por favor ingresa tu clave de acceso para comenzar a interactuar con el asistente digital
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Solo solicitar la clave de acceso
+            agent_access_key = st.text_input(
+                "🔑 Clave de Acceso", 
+                type="password",
+                placeholder="Ingresa tu clave de acceso al asistente",
+                help="Tu clave de acceso para autenticar las solicitudes"
+            )
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
+            with col_btn2:
+                if st.button("🚀 Iniciar sesión", use_container_width=True):
+                    if not agent_access_key:
+                        st.error("❌ Por favor, ingresa la clave de acceso")
+                    else:
+                        # Guardar configuración en session_state
+                        st.session_state.agent_access_key = agent_access_key
+                        st.session_state.is_configured = True
+                        st.success("✅ Clave configurada correctamente")
+                        time.sleep(1)  # Breve pausa para mostrar el mensaje de éxito
+                        st.rerun()
     
     # Parar ejecución hasta que se configure
     st.stop()
 
 # Una vez configurado, mostrar la interfaz normal
-st.markdown("<p class='subheader'>Interactúa con tu asistente.</p>", unsafe_allow_html=True)
+st.markdown("<p class='subheader'>💬 Interactúa con tu asistente inteligente</p>", unsafe_allow_html=True)
 
 # Agregar ejemplos de preguntas con estilo profesional
 st.markdown("""
 <div class="example-questions">
-    <p style="font-size: 0.9rem; color: #8EBBFF; margin-bottom: 1.5rem; font-style: italic; font-family: 'Segoe UI', Arial, sans-serif;">
-        Ejemplos de preguntas que puedes hacerle:
+    <p style="font-size: 1rem; margin-bottom: 1.5rem; font-style: italic; font-family: 'Segoe UI', Arial, sans-serif;">
+        💡 Ejemplos de preguntas que puedes hacerle:
     </p>
-    <ul style="list-style-type: none; padding-left: 0; margin-bottom: 1.5rem; font-family: 'Segoe UI', Arial, sans-serif;">
-        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
-            <span style="font-weight: 500; color: #BBDEFB;">¿Qué servicios presta Construinmuniza?</span>
+    <ul style="list-style-type: none; padding-left: 0; margin-bottom: 0; font-family: 'Segoe UI', Arial, sans-serif;">
+        <li style="margin-bottom: 0.8rem; padding: 1rem; border-radius: 8px; border-left: 4px solid #3498DB;">
+            <span style="font-weight: 500;">🏢 ¿Qué servicios presta Construinmuniza?</span>
         </li>
-        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
-            <span style="font-weight: 500; color: #BBDEFB;">¿Por qué se debe aplicar inmunizante a la madera?</span>
+        <li style="margin-bottom: 0.8rem; padding: 1rem; border-radius: 8px; border-left: 4px solid #3498DB;">
+            <span style="font-weight: 500;">🛡️ ¿Por qué se debe aplicar inmunizante a la madera?</span>
         </li>
-        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
-            <span style="font-weight: 500; color: #BBDEFB;">¿Puedes darme la disponibilidad de inventario de la referencia RE40009250?</span>
+        <li style="margin-bottom: 0.8rem; padding: 1rem; border-radius: 8px; border-left: 4px solid #3498DB;">
+            <span style="font-weight: 500;">📦 ¿Puedes darme la disponibilidad de inventario de la referencia RE40009250?</span>
         </li>
-        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
-            <span style="font-weight: 500; color: #BBDEFB;">¿Puedes darme el precio de PISO PARED 10X1.7X100M2 CEP en El Chagualo?</span>
+        <li style="margin-bottom: 0.8rem; padding: 1rem; border-radius: 8px; border-left: 4px solid #3498DB;">
+            <span style="font-weight: 500;">💰 ¿Puedes darme el precio de PISO PARED 10X1.7X100M2 CEP en El Chagualo?</span>
         </li>
     </ul>
 </div>
 """, unsafe_allow_html=True)
 
 # Sidebar para configuración
-st.sidebar.title("Configuración")
+st.sidebar.title("⚙️ Configuración")
 
 # Mostrar información de conexión actual
 st.sidebar.success("✅ Configuración cargada")
-with st.sidebar.expander("Ver configuración actual"):
+with st.sidebar.expander("📋 Ver configuración actual"):
     st.code(f"Endpoint: {st.session_state.agent_endpoint}\nClave de acceso: {'*'*10}")
 
 # Ajustes avanzados
-with st.sidebar.expander("Ajustes avanzados"):
-    temperature = st.slider("Temperatura", min_value=0.0, max_value=1.0, value=0.2, step=0.1,
+with st.sidebar.expander("🔧 Ajustes avanzados"):
+    temperature = st.slider("🌡️ Temperatura", min_value=0.0, max_value=1.0, value=0.2, step=0.1,
                           help="Valores más altos generan respuestas más creativas, valores más bajos generan respuestas más deterministas.")
     
-    max_tokens = st.slider("Longitud máxima", min_value=100, max_value=2000, value=1000, step=100,
+    max_tokens = st.slider("📏 Longitud máxima", min_value=100, max_value=2000, value=1000, step=100,
                           help="Número máximo de tokens en la respuesta.")
 
 # Sección para probar conexión con el agente
-with st.sidebar.expander("Probar conexión"):
-    if st.button("Verificar endpoint"):
+with st.sidebar.expander("🔍 Probar conexión"):
+    if st.button("🔗 Verificar endpoint"):
         with st.spinner("Verificando conexión..."):
             try:
                 agent_endpoint = st.session_state.agent_endpoint
                 agent_access_key = st.session_state.agent_access_key
                 
                 if not agent_endpoint or not agent_access_key:
-                    st.error("Falta configuración del endpoint o clave de acceso")
+                    st.error("❌ Falta configuración del endpoint o clave de acceso")
                 else:
                     # Asegurarse de que el endpoint termine correctamente
                     if not agent_endpoint.endswith("/"):
@@ -242,7 +418,7 @@ with st.sidebar.expander("Probar conexión"):
                         
                         if response.status_code < 400:
                             st.success(f"✅ Conexión exitosa con el endpoint del agente")
-                            with st.expander("Ver detalles de la respuesta"):
+                            with st.expander("📄 Ver detalles de la respuesta"):
                                 try:
                                     st.json(response.json())
                                 except:
@@ -250,15 +426,15 @@ with st.sidebar.expander("Probar conexión"):
                             st.info("🔍 La API está configurada correctamente y responde a las solicitudes.")
                         else:
                             st.error(f"❌ Error al conectar con el agente. Código: {response.status_code}")
-                            with st.expander("Ver detalles del error"):
+                            with st.expander("📄 Ver detalles del error"):
                                 st.code(response.text)
                     except Exception as e:
-                        st.error(f"Error de conexión: {str(e)}")
+                        st.error(f"❌ Error de conexión: {str(e)}")
             except Exception as e:
-                st.error(f"Error al verificar endpoint: {str(e)}")
+                st.error(f"❌ Error al verificar endpoint: {str(e)}")
 
 # Opciones de gestión de conversación
-st.sidebar.markdown("### Gestión de conversación")
+st.sidebar.markdown("### 💬 Gestión de conversación")
 
 # Botón para limpiar conversación
 if st.sidebar.button("🗑️ Limpiar conversación"):
@@ -287,13 +463,13 @@ if st.sidebar.button("💾 Guardar conversación en PDF"):
     pdf.set_font("Arial", size=12)
     for msg in st.session_state.messages:
         if msg["role"] == "user":
-            pdf.set_text_color(0, 0, 255)  # Azul para usuario
+            pdf.set_text_color(52, 73, 94)  # Color azul oscuro para usuario
             pdf.cell(200, 10, "Usuario:", ln=True)
         else:
-            pdf.set_text_color(0, 128, 0)  # Verde para asistente
+            pdf.set_text_color(52, 152, 219)  # Color azul para asistente
             pdf.cell(200, 10, "Asistente:", ln=True)
         
-        pdf.set_text_color(0, 0, 0)  # Negro para el contenido
+        pdf.set_text_color(44, 62, 80)  # Color oscuro para el contenido
         
         # Partir el texto en múltiples líneas si es necesario
         text = msg["content"]
@@ -311,14 +487,14 @@ if st.sidebar.button("💾 Guardar conversación en PDF"):
     
     # Botón de descarga
     st.sidebar.download_button(
-        label="Descargar PDF",
+        label="📥 Descargar PDF",
         data=pdf_data,
         file_name="conversacion.pdf",
         mime="application/pdf",
     )
 
 # Botón para cerrar sesión
-if st.sidebar.button("Cerrar sesión"):
+if st.sidebar.button("🔓 Cerrar sesión"):
     st.session_state.is_configured = False
     st.session_state.agent_access_key = ""
     st.rerun()
@@ -408,7 +584,7 @@ for message in st.session_state.messages:
             st.markdown(message["audio_html"], unsafe_allow_html=True)
 
 # Campo de entrada para el mensaje
-prompt = st.chat_input("Escribe tu pregunta aquí...")
+prompt = st.chat_input("💭 Escribe tu pregunta aquí...")
 
 # Procesar la entrada del usuario
 if prompt:
@@ -424,14 +600,14 @@ if prompt:
     
     # Mostrar indicador de carga mientras se procesa
     with st.chat_message("assistant"):
-        with st.spinner("Buscando..."):
+        with st.spinner("🔍 Buscando información..."):
             # Enviar consulta al agente
             response = query_agent(prompt, api_history)
             
             if "error" in response:
-                st.error(f"Error: {response['error']}")
+                st.error(f"❌ Error: {response['error']}")
                 if "details" in response:
-                    with st.expander("Detalles del error"):
+                    with st.expander("📋 Detalles del error"):
                         st.code(response["details"])
                 
                 # Añadir mensaje de error al historial
@@ -444,7 +620,7 @@ if prompt:
                 
                 # Generar audio (siempre)
                 audio_html = None
-                with st.spinner("Generando audio..."):
+                with st.spinner("🎵 Generando audio..."):
                     audio_html = text_to_speech(response_text)
                     st.markdown(audio_html, unsafe_allow_html=True)
                 
@@ -455,4 +631,4 @@ if prompt:
                 st.session_state.messages.append(message_data)
 
 # Pie de página
-st.markdown("<div class='footer'>Asistente Digital © 2025</div>", unsafe_allow_html=True)
+st.markdown("<div class='footer'>🌲 Asistente Digital Construinmuniza © 2025</div>", unsafe_allow_html=True)
