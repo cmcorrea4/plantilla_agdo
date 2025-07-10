@@ -13,230 +13,6 @@ from reportlab.lib.units import inch, mm
 from reportlab.pdfgen import canvas
 from reportlab.graphics.shapes import Drawing, Rect
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
-
-# CSS personalizado con colores Construinmuniza
-st.markdown("""
-<style>
-    /* Tema claro con colores Construinmuniza */
-    .stApp {
-        background-color: #FAFAFA;
-    }
-    
-    /* Título principal con branding Construinmuniza */
-    .main-title {
-        font-size: 3rem;
-        font-weight: 700;
-        text-align: center;
-        margin-bottom: 2rem;
-        background: linear-gradient(135deg, #1B5E20, #FFC107);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-    
-    /* Botones con colores Construinmuniza */
-    .stButton > button {
-        background-color: #1B5E20;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.5rem 1rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-    .stButton > button:hover {
-        background-color: #2E7D32;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(27, 94, 32, 0.3);
-    }
-    
-    /* Botones primarios */
-    .stButton > button[kind="primary"] {
-        background-color: #1B5E20;
-        color: white;
-    }
-    .stButton > button[kind="primary"]:hover {
-        background-color: #2E7D32;
-    }
-    
-    /* Inputs y controles */
-    .stTextInput>div>div>input {
-        background-color: #FFFFFF;
-        color: #2C3E50;
-        border: 1px solid #C8E6C9;
-        border-radius: 8px;
-    }
-    .stTextInput>div>div>input:focus {
-        border-color: #1B5E20;
-        box-shadow: 0 0 0 2px rgba(27, 94, 32, 0.2);
-    }
-    
-    .stSelectbox>div>div>div {
-        background-color: #FFFFFF;
-        color: #2C3E50;
-        border: 1px solid #C8E6C9;
-        border-radius: 8px;
-    }
-    
-    .stNumberInput>div>div>input {
-        background-color: #FFFFFF;
-        color: #2C3E50;
-        border: 1px solid #C8E6C9;
-        border-radius: 8px;
-    }
-    
-    /* Sidebar con colores Construinmuniza */
-    section[data-testid="stSidebar"] {
-        background-color: #FFFFFF;
-        border-right: 1px solid #C8E6C9;
-    }
-    
-    section[data-testid="stSidebar"] h1,
-    section[data-testid="stSidebar"] h2,
-    section[data-testid="stSidebar"] h3 {
-        color: #1B5E20 !important;
-        font-weight: 600;
-    }
-    
-    /* Métricas */
-    .metric-container {
-        background-color: #F1F8E9;
-        padding: 1rem;
-        border-radius: 8px;
-        border: 1px solid #C8E6C9;
-        text-align: center;
-    }
-    
-    /* Expanders con tema Construinmuniza */
-    .streamlit-expanderHeader {
-        background-color: #F1F8E9;
-        color: #1B5E20;
-        border: 1px solid #C8E6C9;
-        border-radius: 8px;
-        font-weight: 500;
-    }
-    
-    /* Success/Error/Info messages */
-    .stSuccess {
-        background-color: #E8F5E8;
-        color: #2E7D32;
-        border: 1px solid #A5D6A7;
-        border-radius: 8px;
-    }
-    
-    .stError {
-        background-color: #FFEBEE;
-        color: #C62828;
-        border: 1px solid #EF9A9A;
-        border-radius: 8px;
-    }
-    
-    .stWarning {
-        background-color: #FFF3C4;
-        color: #E65100;
-        border: 1px solid #FFE082;
-        border-radius: 8px;
-    }
-    
-    .stInfo {
-        background-color: #E3F2FD;
-        color: #1565C0;
-        border: 1px solid #90CAF9;
-        border-radius: 8px;
-    }
-    
-    /* DataFrames */
-    .stDataFrame {
-        border: 1px solid #C8E6C9;
-        border-radius: 8px;
-        overflow: hidden;
-    }
-    
-    /* Spinners */
-    .stSpinner {
-        color: #1B5E20;
-    }
-    
-    /* Checkboxes */
-    .stCheckbox {
-        color: #2C3E50;
-    }
-    
-    /* Divisores */
-    hr {
-        border-color: #C8E6C9;
-    }
-    
-    /* Títulos de sección */
-    .section-header {
-        color: #1B5E20;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #C8E6C9;
-    }
-    
-    /* Cards de productos */
-    .product-card {
-        background-color: #FFFFFF;
-        border: 1px solid #C8E6C9;
-        border-radius: 12px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 2px 4px rgba(27, 94, 32, 0.1);
-        transition: all 0.3s ease;
-    }
-    
-    .product-card:hover {
-        box-shadow: 0 4px 8px rgba(27, 94, 32, 0.2);
-        transform: translateY(-2px);
-    }
-    
-    /* Download button especial */
-    .download-button {
-        background: linear-gradient(135deg, #1B5E20, #2E7D32);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 600;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    
-    .download-button:hover {
-        background: linear-gradient(135deg, #2E7D32, #388E3C);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(27, 94, 32, 0.3);
-    }
-    
-    /* Subtítulos */
-    h1, h2, h3 {
-        color: #1B5E20;
-    }
-    
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-        width: 8px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: #F1F8E9;
-        border-radius: 4px;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: #A5D6A7;
-        border-radius: 4px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-        background: #81C784;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 class GeneradorCotizacionesMadera:
     def __init__(self):
         self.productos = None
@@ -741,13 +517,236 @@ class GeneradorCotizacionesMadera:
         return stats
 
 def main():
-    # Configuración de la página
+    # Configuración de la página - DEBE IR PRIMERO
     st.set_page_config(
         page_title="Cotizador Construinmuniza",
         page_icon="🌲",
         layout="wide",
         initial_sidebar_state="expanded"
     )
+    
+    # CSS personalizado con colores Construinmuniza
+    st.markdown("""
+<style>
+    /* Tema claro con colores Construinmuniza */
+    .stApp {
+        background-color: #FAFAFA;
+    }
+    
+    /* Título principal con branding Construinmuniza */
+    .main-title {
+        font-size: 3rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 2rem;
+        background: linear-gradient(135deg, #1B5E20, #FFC107);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    /* Botones con colores Construinmuniza */
+    .stButton > button {
+        background-color: #1B5E20;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    .stButton > button:hover {
+        background-color: #2E7D32;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(27, 94, 32, 0.3);
+    }
+    
+    /* Botones primarios */
+    .stButton > button[kind="primary"] {
+        background-color: #1B5E20;
+        color: white;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background-color: #2E7D32;
+    }
+    
+    /* Inputs y controles */
+    .stTextInput>div>div>input {
+        background-color: #FFFFFF;
+        color: #2C3E50;
+        border: 1px solid #C8E6C9;
+        border-radius: 8px;
+    }
+    .stTextInput>div>div>input:focus {
+        border-color: #1B5E20;
+        box-shadow: 0 0 0 2px rgba(27, 94, 32, 0.2);
+    }
+    
+    .stSelectbox>div>div>div {
+        background-color: #FFFFFF;
+        color: #2C3E50;
+        border: 1px solid #C8E6C9;
+        border-radius: 8px;
+    }
+    
+    .stNumberInput>div>div>input {
+        background-color: #FFFFFF;
+        color: #2C3E50;
+        border: 1px solid #C8E6C9;
+        border-radius: 8px;
+    }
+    
+    /* Sidebar con colores Construinmuniza */
+    section[data-testid="stSidebar"] {
+        background-color: #FFFFFF;
+        border-right: 1px solid #C8E6C9;
+    }
+    
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3 {
+        color: #1B5E20 !important;
+        font-weight: 600;
+    }
+    
+    /* Métricas */
+    .metric-container {
+        background-color: #F1F8E9;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid #C8E6C9;
+        text-align: center;
+    }
+    
+    /* Expanders con tema Construinmuniza */
+    .streamlit-expanderHeader {
+        background-color: #F1F8E9;
+        color: #1B5E20;
+        border: 1px solid #C8E6C9;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+    
+    /* Success/Error/Info messages */
+    .stSuccess {
+        background-color: #E8F5E8;
+        color: #2E7D32;
+        border: 1px solid #A5D6A7;
+        border-radius: 8px;
+    }
+    
+    .stError {
+        background-color: #FFEBEE;
+        color: #C62828;
+        border: 1px solid #EF9A9A;
+        border-radius: 8px;
+    }
+    
+    .stWarning {
+        background-color: #FFF3C4;
+        color: #E65100;
+        border: 1px solid #FFE082;
+        border-radius: 8px;
+    }
+    
+    .stInfo {
+        background-color: #E3F2FD;
+        color: #1565C0;
+        border: 1px solid #90CAF9;
+        border-radius: 8px;
+    }
+    
+    /* DataFrames */
+    .stDataFrame {
+        border: 1px solid #C8E6C9;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    /* Spinners */
+    .stSpinner {
+        color: #1B5E20;
+    }
+    
+    /* Checkboxes */
+    .stCheckbox {
+        color: #2C3E50;
+    }
+    
+    /* Divisores */
+    hr {
+        border-color: #C8E6C9;
+    }
+    
+    /* Títulos de sección */
+    .section-header {
+        color: #1B5E20;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #C8E6C9;
+    }
+    
+    /* Cards de productos */
+    .product-card {
+        background-color: #FFFFFF;
+        border: 1px solid #C8E6C9;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(27, 94, 32, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .product-card:hover {
+        box-shadow: 0 4px 8px rgba(27, 94, 32, 0.2);
+        transform: translateY(-2px);
+    }
+    
+    /* Download button especial */
+    .download-button {
+        background: linear-gradient(135deg, #1B5E20, #2E7D32);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .download-button:hover {
+        background: linear-gradient(135deg, #2E7D32, #388E3C);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(27, 94, 32, 0.3);
+    }
+    
+    /* Subtítulos */
+    h1, h2, h3 {
+        color: #1B5E20;
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #F1F8E9;
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: #A5D6A7;
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: #81C784;
+    }
+</style>
+""", unsafe_allow_html=True)
     
     # Título principal con branding Construinmuniza
     st.markdown('<h1 class="main-title">🌲 Cotizador Construinmuniza</h1>', unsafe_allow_html=True)
