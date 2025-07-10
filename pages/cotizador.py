@@ -1,563 +1,892 @@
 import streamlit as st
-import requests
-import json
-import time
-import base64
-from gtts import gTTS
-import io
-from fpdf import FPDF
-import tempfile
 import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+import re
 import os
+from io import BytesIO
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch, mm
+from reportlab.pdfgen import canvas
+from reportlab.graphics.shapes import Drawing, Rect
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
-# Configuración de la página sin el parámetro theme (compatible con versiones anteriores)
-st.set_page_config(
-    page_title="Asistente Digital",
-    page_icon="🌲",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-    menu_items=None
-)
-
-# Establecer tema oscuro mediante CSS personalizado para versiones anteriores
-st.markdown("""
-<style>
-    /* Tema oscuro personalizado para versiones anteriores de Streamlit */
-    body {
-        color: #fafafa;
-        background-color: #0e1117;
-    }
-    .stApp {
-        background-color: #0e1117;
-    }
-    .stTextInput>div>div>input {
-        background-color: #262730;
-        color: white;
-    }
-    .stSlider>div>div>div {
-        color: white;
-    }
-    .stSelectbox>div>div>div {
-        background-color: #262730;
-        color: white;
-    }
-    #div.stButton > button:first-child {
-    #    background-color: #1E88E5;
-    #    color: white;
-    #}
-    .css-1d391kg, .css-12oz5g7 {
-        background-color: #262730;
-    }
-    
-    /* Estilos personalizados para el asistente - Todos los títulos en BLANCO */
-    .main-header {
-        font-size: 2.5rem;
-        color: #FFFFFF;
-        text-align: center;
-        margin-bottom: 2rem;
-        font-weight: bold;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-    }
-    .subheader {
-        font-size: 1.5rem;
-        color: #FFFFFF;
-        margin-bottom: 1rem;
-    }
-    .audio-controls {
-        display: flex;
-        align-items: center;
-        margin-top: 10px;
-    }
-    .footer {
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        background-color: #0e1117;
-        text-align: center;
-        padding: 10px;
-        font-size: 0.8rem;
-    }
-    /* Asegurar que todos los títulos en la barra lateral también sean blancos */
-    .sidebar .sidebar-content h1, 
-    .sidebar .sidebar-content h2, 
-    .sidebar .sidebar-content h3,
-    .css-1outpf7 {
-        color: #FFFFFF !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Función para cargar y procesar el archivo Excel
-@st.cache_data
-def load_excel_data():
-    """Carga el archivo Excel y procesa su contenido"""
-    file_path = "GUION PARA IA LISTADO.xlsx"
-    
-    try:
-        if not os.path.exists(file_path):
-            return None, f"Error: No se encontró el archivo '{file_path}'"
-        
-        # Leer todas las hojas del archivo Excel
-        try:
-            excel_file = pd.ExcelFile(file_path)
-            all_sheets = {}
-            
-            for sheet_name in excel_file.sheet_names:
-                try:
-                    df = pd.read_excel(file_path, sheet_name=sheet_name)
-                    # Limpiar nombres de columnas (eliminar espacios extra)
-                    df.columns = df.columns.str.strip()
-                    all_sheets[sheet_name] = df
-                except Exception as sheet_error:
-                    st.warning(f"No se pudo cargar la hoja '{sheet_name}': {str(sheet_error)}")
-                    continue
-            
-            if not all_sheets:
-                return None, "No se pudo cargar ninguna hoja del archivo Excel"
-                
-            return all_sheets, None
-            
-        except Exception as read_error:
-            return None, f"Error al leer el archivo Excel: {str(read_error)}"
-        
-    except Exception as e:
-        return None, f"Error al cargar el archivo Excel: {str(e)}"
-
-# Función para formatear datos del Excel como contexto
-def format_excel_context(excel_data):
-    """Convierte los datos del Excel en contexto para la IA"""
-    if not excel_data:
-        return ""
-    
-    context_parts = []
-    context_parts.append("=== INFORMACIÓN DE CONSTRUINMUNIZA ===\n")
-    
-    for sheet_name, df in excel_data.items():
-        context_parts.append(f"\n--- {sheet_name.upper()} ---")
-        
-        # Convertir el DataFrame a texto estructurado
-        if not df.empty:
-            # Obtener información básica de la hoja
-            context_parts.append(f"Número de registros: {len(df)}")
-            context_parts.append(f"Columnas: {', '.join(df.columns.tolist())}")
-            
-            # Agregar algunas filas de muestra (máximo 10)
-            sample_rows = min(10, len(df))
-            context_parts.append(f"\nDatos de muestra ({sample_rows} registros):")
-            
-            for idx, row in df.head(sample_rows).iterrows():
-                row_data = []
-                for col in df.columns:
-                    value = row[col]
-                    # Manejar valores nulos y diferentes tipos de datos
-                    if pd.notna(value) and str(value).strip() != "":
-                        # Convertir a string y limpiar
-                        clean_value = str(value).strip()
-                        if clean_value:
-                            row_data.append(f"{col}: {clean_value}")
-                
-                if row_data:
-                    context_parts.append(f"- {' | '.join(row_data)}")
-        else:
-            context_parts.append("Esta hoja está vacía.")
-    
-    return "\n".join(context_parts)
-
-# Función para inicializar variables de sesión
-def initialize_session_vars():
-    if "is_configured" not in st.session_state:
-        st.session_state.is_configured = False
-    if "agent_endpoint" not in st.session_state:
-        # Endpoint fijo como solicitado
-        st.session_state.agent_endpoint = "https://vs3sawqsrcx6yzud3roifshn.agents.do-ai.run"
-    if "agent_access_key" not in st.session_state:
-        st.session_state.agent_access_key = ""
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    if "excel_data" not in st.session_state:
-        st.session_state.excel_data = None
-    if "excel_context" not in st.session_state:
-        st.session_state.excel_context = ""
-
-# Inicializar variables
-initialize_session_vars()
-
-# Cargar datos del Excel al inicio (silenciosamente)
-if st.session_state.excel_data is None:
-    excel_data, error = load_excel_data()
-    if error:
-        st.session_state.excel_data = {}
-        st.session_state.excel_context = ""
-    else:
-        st.session_state.excel_data = excel_data
-        st.session_state.excel_context = format_excel_context(excel_data)
-
-# Función para generar audio a partir de texto
-def text_to_speech(text):
-    try:
-        # Crear objeto gTTS (siempre en español y rápido)
-        tts = gTTS(text=text, lang='es', slow=False)
-        
-        # Guardar audio en un buffer en memoria
-        audio_buffer = io.BytesIO()
-        tts.write_to_fp(audio_buffer)
-        audio_buffer.seek(0)
-        
-        # Convertir a base64 para reproducir en HTML (sin autoplay)
-        audio_base64 = base64.b64encode(audio_buffer.read()).decode()
-        audio_html = f'''
-        <div class="audio-controls">
-            <audio controls>
-                <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-                Tu navegador no soporta el elemento de audio.
-            </audio>
-        </div>
-        '''
-        return audio_html
-    except Exception as e:
-        return f"<div class='error'>Error al generar audio: {str(e)}</div>"
-
-# Título y descripción de la aplicación
-st.markdown("<h1 class='main-header'>Asistente Construinmuniza</h1>", unsafe_allow_html=True)
-
-# Pantalla de configuración inicial si aún no se ha configurado
-if not st.session_state.is_configured:
-    st.markdown("<h2 class='subheader'>Acceso al Asistente</h2>", unsafe_allow_html=True)
-    
-    st.info("Por favor ingresa tu clave de acceso al asistente digital")
-    
-    # Solo solicitar la clave de acceso
-    agent_access_key = st.text_input(
-        "Clave de Acceso", 
-        type="password",
-        placeholder="Ingresa tu clave de acceso al asistente",
-        help="Tu clave de acceso para autenticar las solicitudes"
-    )
-    
-    if st.button("Iniciar sesión"):
-        if not agent_access_key:
-            st.error("Por favor, ingresa la clave de acceso")
-        else:
-            # Guardar configuración en session_state
-            st.session_state.agent_access_key = agent_access_key
-            st.session_state.is_configured = True
-            st.success("Clave configurada")  # Cambio de mensaje aquí
-            time.sleep(1)  # Breve pausa para mostrar el mensaje de éxito
-            st.rerun()
-    
-    # Parar ejecución hasta que se configure
-    st.stop()
-
-# Una vez configurado, mostrar la interfaz normal
-st.markdown("<p class='subheader'>Interactúa con tu asistente.</p>", unsafe_allow_html=True)
-
-# Agregar ejemplos de preguntas con estilo profesional
-st.markdown("""
-<div class="example-questions">
-    <p style="font-size: 0.9rem; color: #8EBBFF; margin-bottom: 1.5rem; font-style: italic; font-family: 'Segoe UI', Arial, sans-serif;">
-        Ejemplos de preguntas que puedes hacerle:
-    </p>
-    <ul style="list-style-type: none; padding-left: 0; margin-bottom: 1.5rem; font-family: 'Segoe UI', Arial, sans-serif;">
-        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
-            <span style="font-weight: 500; color: #BBDEFB;">¿Qué servicios presta Construinmuniza?</span>
-        </li>
-        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
-            <span style="font-weight: 500; color: #BBDEFB;">¿Por qué se debe aplicar inmunizante a la madera?</span>
-        </li>
-        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
-            <span style="font-weight: 500; color: #BBDEFB;">¿Puedes darme la disponibilidad de inventario de la referencia RE40009250?</span>
-        </li>
-        <li style="margin-bottom: 0.8rem; padding: 0.5rem 0.8rem; background-color: rgba(30, 136, 229, 0.1); border-radius: 4px; border-left: 3px solid #1E88E5;">
-            <span style="font-weight: 500; color: #BBDEFB;">¿Puedes darme el precio de PISO PARED 10X1.7X100M2 CEP en El Chagualo?</span>
-        </li>
-    </ul>
-</div>
-""", unsafe_allow_html=True)
-
-# Sidebar para configuración
-st.sidebar.title("Configuración")
-
-# Mostrar información de conexión actual
-st.sidebar.success("✅ Configuración cargada")
-with st.sidebar.expander("Ver configuración actual"):
-    st.code(f"Endpoint: {st.session_state.agent_endpoint}\nClave de acceso: {'*'*10}")
-
-# Ajustes avanzados
-with st.sidebar.expander("Ajustes avanzados"):
-    temperature = st.slider("Temperatura", min_value=0.0, max_value=1.0, value=0.2, step=0.1,
-                          help="Valores más altos generan respuestas más creativas, valores más bajos generan respuestas más deterministas.")
-    
-    max_tokens = st.slider("Longitud máxima", min_value=100, max_value=2000, value=1000, step=100,
-                          help="Número máximo de tokens en la respuesta.")
-
-# Sección para probar conexión con el agente
-with st.sidebar.expander("Probar conexión"):
-    if st.button("Verificar endpoint"):
-        with st.spinner("Verificando conexión..."):
-            try:
-                agent_endpoint = st.session_state.agent_endpoint
-                agent_access_key = st.session_state.agent_access_key
-                
-                if not agent_endpoint or not agent_access_key:
-                    st.error("Falta configuración del endpoint o clave de acceso")
-                else:
-                    # Asegurarse de que el endpoint termine correctamente
-                    if not agent_endpoint.endswith("/"):
-                        agent_endpoint += "/"
-                    
-                    # Verificar si la documentación está disponible (común en estos endpoints)
-                    docs_url = f"{agent_endpoint}docs"
-                    
-                    # Preparar headers
-                    headers = {
-                        "Authorization": f"Bearer {agent_access_key}",
-                        "Content-Type": "application/json"
-                    }
-                    
-                    try:
-                        # Primero intentar verificar si hay documentación disponible
-                        response = requests.get(docs_url, timeout=10)
-                        
-                        if response.status_code < 400:
-                            st.success(f"✅ Documentación del agente accesible en: {docs_url}")
-                        
-                        # Luego intentar hacer una solicitud simple para verificar la conexión
-                        completions_url = f"{agent_endpoint}api/v1/chat/completions"
-                        test_payload = {
-                            "model": "n/a",
-                            "messages": [{"role": "user", "content": "Hello"}],
-                            "max_tokens": 5,
-                            "stream": False
-                        }
-                        
-                        response = requests.post(completions_url, headers=headers, json=test_payload, timeout=10)
-                        
-                        if response.status_code < 400:
-                            st.success(f"✅ Conexión exitosa con el endpoint del agente")
-                            with st.expander("Ver detalles de la respuesta"):
-                                try:
-                                    st.json(response.json())
-                                except:
-                                    st.code(response.text)
-                            st.info("🔍 La API está configurada correctamente y responde a las solicitudes.")
-                        else:
-                            st.error(f"❌ Error al conectar con el agente. Código: {response.status_code}")
-                            with st.expander("Ver detalles del error"):
-                                st.code(response.text)
-                    except Exception as e:
-                        st.error(f"Error de conexión: {str(e)}")
-            except Exception as e:
-                st.error(f"Error al verificar endpoint: {str(e)}")
-
-# Opciones de gestión de conversación
-st.sidebar.markdown("### Gestión de conversación")
-
-# Botón para limpiar conversación
-if st.sidebar.button("🗑️ Limpiar conversación"):
-    st.session_state.messages = []
-    st.rerun()
-
-# Botón para guardar conversación en PDF
-if st.sidebar.button("💾 Guardar conversación en PDF"):
-    # Crear PDF
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    
-    # Añadir título
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, "Conversación con el Asistente", ln=True, align='C')
-    pdf.ln(10)
-    
-    # Añadir fecha
-    from datetime import datetime
-    pdf.set_font("Arial", 'I', 10)
-    pdf.cell(200, 10, f"Generado el: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}", ln=True)
-    pdf.ln(10)
-    
-    # Recuperar mensajes
-    pdf.set_font("Arial", size=12)
-    for msg in st.session_state.messages:
-        if msg["role"] == "user":
-            pdf.set_text_color(0, 0, 255)  # Azul para usuario
-            pdf.cell(200, 10, "Usuario:", ln=True)
-        else:
-            pdf.set_text_color(0, 128, 0)  # Verde para asistente
-            pdf.cell(200, 10, "Asistente:", ln=True)
-        
-        pdf.set_text_color(0, 0, 0)  # Negro para el contenido
-        
-        # Partir el texto en múltiples líneas si es necesario
-        text = msg["content"]
-        pdf.multi_cell(190, 10, text)
-        pdf.ln(5)
-    
-    # Guardar el PDF en un archivo temporal
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-        pdf_path = tmp_file.name
-        pdf.output(pdf_path)
-    
-    # Abrir y leer el archivo para la descarga
-    with open(pdf_path, "rb") as f:
-        pdf_data = f.read()
-    
-    # Botón de descarga
-    st.sidebar.download_button(
-        label="Descargar PDF",
-        data=pdf_data,
-        file_name="conversacion.pdf",
-        mime="application/pdf",
-    )
-
-# Botón para cerrar sesión
-if st.sidebar.button("Cerrar sesión"):
-    st.session_state.is_configured = False
-    st.session_state.agent_access_key = ""
-    st.rerun()
-
-# Función para enviar consulta al agente
-def query_agent(prompt, history=None):
-    try:
-        # Obtener configuración del agente
-        agent_endpoint = st.session_state.agent_endpoint
-        agent_access_key = st.session_state.agent_access_key
-        
-        if not agent_endpoint or not agent_access_key:
-            return {"error": "Las credenciales de API no están configuradas correctamente."}
-        
-        # Asegurarse de que el endpoint termine correctamente
-        if not agent_endpoint.endswith("/"):
-            agent_endpoint += "/"
-        
-        # Construir URL para chat completions
-        completions_url = f"{agent_endpoint}api/v1/chat/completions"
-        
-        # Preparar headers con autenticación
-        headers = {
-            "Authorization": f"Bearer {agent_access_key}",
-            "Content-Type": "application/json"
-        }
-        
-        # Preparar los mensajes en formato OpenAI
-        messages = []
-        
-        # Agregar contexto del Excel automáticamente si está disponible
-        if st.session_state.excel_context:
-            system_message = {
-                "role": "system", 
-                "content": f"""Eres un asistente de Construinmuniza. Utiliza la siguiente información para responder preguntas sobre productos, inventario, precios y servicios:
-
-{st.session_state.excel_context}
-
-Responde de manera profesional y útil, utilizando la información proporcionada cuando sea relevante."""
+class GeneradorCotizacionesMadera:
+    def __init__(self):
+        self.productos = None
+        self.ubicaciones = {
+            'caldas': {
+                'sin_iva': 'PRECIO CALDAS',
+                'con_iva': 'PRECIO CALDAS CON IVA'
+            },
+            'chagualo': {
+                'sin_iva': 'PRECIO CHAGUALO, GIRARDOTA, SAN CRISTOBAL',
+                'con_iva': 'PRECIO CHAGUALO, GIRARDOTA, SAN CRISTOBAL IVA INCLUIDO'
             }
-            messages.append(system_message)
-        
-        if history:
-            messages.extend([{"role": msg["role"], "content": msg["content"]} for msg in history])
-        messages.append({"role": "user", "content": prompt})
-        
-        # Construir el payload
-        payload = {
-            "model": "n/a",  # El modelo no es relevante para el agente
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-            "stream": False
         }
         
-        # Enviar solicitud POST
-        try:
-            response = requests.post(completions_url, headers=headers, json=payload, timeout=60)
-            
-            # Verificar respuesta
-            if response.status_code == 200:
-                try:
-                    response_data = response.json()
-                    
-                    # Procesar la respuesta en formato OpenAI
-                    if "choices" in response_data and len(response_data["choices"]) > 0:
-                        choice = response_data["choices"][0]
-                        if "message" in choice and "content" in choice["message"]:
-                            result = {
-                                "response": choice["message"]["content"]
-                            }
-                            return result
-                    
-                    # Si no se encuentra la estructura esperada
-                    return {"error": "Formato de respuesta inesperado", "details": str(response_data)}
-                except ValueError:
-                    # Si no es JSON, devolver el texto plano
-                    return {"response": response.text}
-            else:
-                # Error en la respuesta
-                error_message = f"Error en la solicitud. Código: {response.status_code}"
-                try:
-                    error_details = response.json()
-                    return {"error": error_message, "details": str(error_details)}
-                except:
-                    return {"error": error_message, "details": response.text}
-                
-        except requests.exceptions.RequestException as e:
-            return {"error": f"Error en la solicitud HTTP: {str(e)}"}
+    def cargar_excel_automatico(self):
+        """Cargar productos desde archivo Excel automáticamente"""
+        file_path = "GUION PARA IA LISTADO.xlsx"
         
-    except Exception as e:
-        return {"error": f"Error al comunicarse con el asistente: {str(e)}"}
-
-# Mostrar historial de conversación
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-        # Si es un mensaje del asistente y tiene audio asociado, mostrarlo
-        if message["role"] == "assistant" and "audio_html" in message:
-            st.markdown(message["audio_html"], unsafe_allow_html=True)
-
-# Campo de entrada para el mensaje
-prompt = st.chat_input("Escribe tu pregunta aquí...")
-
-# Procesar la entrada del usuario
-if prompt:
-    # Añadir mensaje del usuario al historial
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    
-    # Mostrar mensaje del usuario
-    with st.chat_message("user"):
-        st.markdown(prompt)
-    
-    # Preparar historial para la API
-    api_history = st.session_state.messages[:-1]  # Excluir el mensaje actual
-    
-    # Mostrar indicador de carga mientras se procesa
-    with st.chat_message("assistant"):
-        with st.spinner("Buscando..."):
-            # Enviar consulta al agente
-            response = query_agent(prompt, api_history)
+        try:
+            if not os.path.exists(file_path):
+                return {
+                    'exito': False,
+                    'error': f"No se encontró el archivo '{file_path}'",
+                    'mensaje': f'Archivo {file_path} no encontrado en el directorio'
+                }
             
-            if "error" in response:
-                st.error(f"Error: {response['error']}")
-                if "details" in response:
-                    with st.expander("Detalles del error"):
-                        st.code(response["details"])
-                
-                # Añadir mensaje de error al historial
-                error_msg = f"Lo siento, ocurrió un error al procesar tu solicitud: {response['error']}"
-                st.session_state.messages.append({"role": "assistant", "content": error_msg})
-            else:
-                # Mostrar respuesta del asistente
-                response_text = response.get("response", "No se recibió respuesta del agente.")
-                st.markdown(response_text)
-                
-                # Generar audio (siempre)
-                audio_html = None
-                with st.spinner("Generando audio..."):
-                    audio_html = text_to_speech(response_text)
-                    st.markdown(audio_html, unsafe_allow_html=True)
-                
-                # Añadir respuesta al historial con el audio
-                message_data = {"role": "assistant", "content": response_text}
-                if audio_html:
-                    message_data["audio_html"] = audio_html
-                st.session_state.messages.append(message_data)
+            # Leer el archivo Excel
+            df = pd.read_excel(file_path, engine='openpyxl')
+            
+            # Limpiar nombres de columnas
+            df.columns = df.columns.str.strip()
+            
+            # Filtrar filas con referencia y descripción válidas
+            df = df.dropna(subset=['Referencia', 'DESCRIPCION'])
+            df = df[df['Referencia'].str.strip() != '']
+            df = df[df['DESCRIPCION'].str.strip() != '']
+            
+            # Limpiar precios (convertir a numérico)
+            columnas_precio = [
+                'PRECIO CALDAS',
+                'PRECIO CALDAS CON IVA',
+                'PRECIO CHAGUALO, GIRARDOTA, SAN CRISTOBAL',
+                'PRECIO CHAGUALO, GIRARDOTA, SAN CRISTOBAL IVA INCLUIDO'
+            ]
+            
+            for col in columnas_precio:
+                if col in df.columns:
+                    df[col] = df[col].apply(self.limpiar_precio)
+            
+            self.productos = df
+            
+            return {
+                'exito': True,
+                'total_productos': len(df),
+                'mensaje': f'Excel cargado exitosamente con {len(df)} productos',
+                'columnas': list(df.columns)
+            }
+        except Exception as e:
+            return {
+                'exito': False,
+                'error': str(e),
+                'mensaje': 'Error al cargar el archivo Excel'
+            }
+    
+    def limpiar_precio(self, precio):
+        """Limpiar y convertir precio a número"""
+        if pd.isna(precio):
+            return 0
+        
+        # Convertir a string y limpiar
+        precio_str = str(precio)
+        # Remover caracteres no numéricos excepto punto y coma
+        precio_limpio = re.sub(r'[^\d.,]', '', precio_str)
+        # Remover comas (separadores de miles)
+        precio_limpio = precio_limpio.replace(',', '')
+        
+        try:
+            return float(precio_limpio)
+        except:
+            return 0
+    
+    def formatear_precio(self, precio):
+        """Formatear precio como moneda colombiana"""
+        if pd.isna(precio) or precio == 0:
+            return "$ 0"
+        return f"$ {precio:,.0f}".replace(',', '.')
+    
+    def buscar_productos(self, termino_busqueda, ubicacion='caldas', incluir_iva=True, limite=10):
+        """Buscar productos por descripción"""
+        if self.productos is None or self.productos.empty:
+            return {
+                'exito': False,
+                'mensaje': 'No hay productos cargados'
+            }
+        
+        # Filtrar productos que contengan el término de búsqueda
+        mask = self.productos['DESCRIPCION'].str.contains(
+            termino_busqueda, 
+            case=False, 
+            na=False
+        )
+        resultados = self.productos[mask].head(limite)
+        
+        if resultados.empty:
+            return {
+                'exito': False,
+                'mensaje': f'No se encontraron productos para: {termino_busqueda}'
+            }
+        
+        # Formatear resultados
+        productos_formateados = []
+        for _, producto in resultados.iterrows():
+            producto_formateado = self.formatear_producto(producto, ubicacion, incluir_iva)
+            productos_formateados.append(producto_formateado)
+        
+        return {
+            'exito': True,
+            'resultados': productos_formateados,
+            'total': len(productos_formateados)
+        }
+    
+    def formatear_producto(self, producto, ubicacion='caldas', incluir_iva=True):
+        """Formatear un producto con toda la información"""
+        ubicacion_config = self.ubicaciones[ubicacion]
+        columna_precio = ubicacion_config['con_iva'] if incluir_iva else ubicacion_config['sin_iva']
+        
+        precio = producto.get(columna_precio, 0)
+        
+        return {
+            'referencia': producto.get('Referencia', ''),
+            'descripcion': producto.get('DESCRIPCION', ''),
+            'acabado': producto.get('ACABADO DE LA MADERA', ''),
+            'uso': producto.get('USO', ''),
+            'garantia': producto.get('GARANTIA', ''),
+            'ubicacion': ubicacion,
+            'incluir_iva': incluir_iva,
+            'precio': self.formatear_precio(precio),
+            'precio_numerico': precio,
+            'precios': {
+                'caldas_sin_iva': producto.get('PRECIO CALDAS', 0),
+                'caldas_con_iva': producto.get('PRECIO CALDAS CON IVA', 0),
+                'chagualo_sin_iva': producto.get('PRECIO CHAGUALO, GIRARDOTA, SAN CRISTOBAL', 0),
+                'chagualo_con_iva': producto.get('PRECIO CHAGUALO, GIRARDOTA, SAN CRISTOBAL IVA INCLUIDO', 0)
+            }
+        }
+    
+    def generar_cotizacion(self, productos_seleccionados, datos_cliente, opciones=None):
+        """Generar cotización completa"""
+        if opciones is None:
+            opciones = {}
+            
+        ubicacion = opciones.get('ubicacion', 'caldas')
+        incluir_iva = opciones.get('incluir_iva', True)
+        descuento_porcentaje = opciones.get('descuento', 0)
+        validez_dias = opciones.get('validez_dias', 30)
+        
+        subtotal = 0
+        items_cotizacion = []
+        
+        for item in productos_seleccionados:
+            cantidad = item.get('cantidad', 1)
+            precio_unitario = item['precio_numerico']
+            total_item = cantidad * precio_unitario
+            subtotal += total_item
+            
+            items_cotizacion.append({
+                'referencia': item['referencia'],
+                'descripcion': item['descripcion'],
+                'acabado': item['acabado'],
+                'uso': item['uso'],
+                'garantia': item['garantia'],
+                'cantidad': cantidad,
+                'precio_unitario': self.formatear_precio(precio_unitario),
+                'total': self.formatear_precio(total_item),
+                'precio_unitario_numerico': precio_unitario,
+                'total_numerico': total_item
+            })
+        
+        # Calcular totales
+        valor_descuento = subtotal * (descuento_porcentaje / 100)
+        total = subtotal - valor_descuento
+        
+        fecha_actual = datetime.now()
+        fecha_vencimiento = fecha_actual + timedelta(days=validez_dias)
+        
+        ubicacion_texto = 'Caldas' if ubicacion == 'caldas' else 'Chagualo, Girardota, San Cristóbal'
+        
+        return {
+            'numero_cotizacion': self.generar_numero_cotizacion(),
+            'fecha': fecha_actual.strftime('%d/%m/%Y'),
+            'fecha_vencimiento': fecha_vencimiento.strftime('%d/%m/%Y'),
+            'cliente': datos_cliente,
+            'ubicacion': ubicacion_texto,
+            'incluye_iva': incluir_iva,
+            'items': items_cotizacion,
+            'resumen': {
+                'subtotal': self.formatear_precio(subtotal),
+                'descuento': f'{descuento_porcentaje}% - {self.formatear_precio(valor_descuento)}' if descuento_porcentaje > 0 else None,
+                'total': self.formatear_precio(total),
+                'subtotal_numerico': subtotal,
+                'descuento_numerico': valor_descuento,
+                'total_numerico': total
+            },
+            'condiciones': self.obtener_condiciones_generales()
+        }
+    
+    def generar_numero_cotizacion(self):
+        """Generar número único de cotización"""
+        fecha = datetime.now()
+        timestamp = str(int(fecha.timestamp()))[-6:]
+        return f"COT-MAD-{fecha.strftime('%Y%m')}-{timestamp}"
+    
+    def generar_pdf_cotizacion(self, cotizacion, datos_empresa=None):
+        """Generar PDF de la cotización con formato profesional"""
+        buffer = BytesIO()
+        
+        # Configuración de la página con márgenes equilibrados
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            rightMargin=15*mm,
+            leftMargin=15*mm,
+            topMargin=15*mm,
+            bottomMargin=15*mm
+        )
+        
+        # Estilos
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=16,
+            textColor=colors.black,
+            spaceAfter=12,
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold'
+        )
+        
+        header_style = ParagraphStyle(
+            'HeaderStyle',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=colors.black,
+            alignment=TA_LEFT,
+            fontName='Helvetica'
+        )
+        
+        # Datos de empresa por defecto
+        if datos_empresa is None:
+            datos_empresa = {
+                'nombre': 'Tu Empresa de Productos de Madera',
+                'nit': '900.XXX.XXX-X',
+                'direccion': 'Calle XX # XX - XX',
+                'telefono': 'XXX-XXXX',
+                'ciudad': 'Medellín',
+                'email': 'ventas@tuempresa.com'
+            }
+        
+        # Contenido del PDF
+        story = []
+        
+        # HEADER DE LA EMPRESA
+        header_data = [
+            [
+                Paragraph(f"""
+                <b>{datos_empresa['nombre']}</b><br/>
+                NIT: {datos_empresa['nit']}<br/>
+                {datos_empresa['direccion']}<br/>
+                Tel: {datos_empresa['telefono']}<br/>
+                {datos_empresa['ciudad']}
+                """, header_style),
+                Paragraph(f"""
+                <b>COTIZACIÓN</b><br/>
+                No. {cotizacion['numero_cotizacion']}
+                """, ParagraphStyle(
+                    'HeaderRight',
+                    parent=styles['Normal'],
+                    fontSize=12,
+                    textColor=colors.black,
+                    alignment=TA_CENTER,
+                    fontName='Helvetica-Bold'
+                ))
+            ]
+        ]
+        
+        header_table = Table(header_data, colWidths=[4.2*inch, 2.5*inch])
+        header_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('BOX', (1, 0), (1, 0), 1.5, colors.black),
+            ('INNERGRID', (1, 0), (1, 0), 1.5, colors.black),
+            ('LEFTPADDING', (0, 0), (-1, -1), 8),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        
+        story.append(header_table)
+        story.append(Spacer(1, 20))
+        
+        # TÍTULO
+        story.append(Paragraph("COTIZACIÓN DE VENTAS", title_style))
+        story.append(Spacer(1, 15))
+        
+        # INFORMACIÓN DEL CLIENTE Y COTIZACIÓN
+        cliente_data = [
+            [
+                Paragraph(f"""
+                <b>Cliente</b><br/>
+                <b>Nombre:</b> {cotizacion['cliente']['nombre']}<br/>
+                <b>Empresa:</b> {cotizacion['cliente'].get('empresa', 'N/A')}<br/>
+                <b>Teléfono:</b> {cotizacion['cliente'].get('telefono', 'N/A')}<br/>
+                <b>Email:</b> {cotizacion['cliente'].get('email', 'N/A')}
+                """, header_style),
+                Paragraph(f"""
+                <b>Fecha:</b> {cotizacion['fecha']}<br/>
+                <b>Vencimiento:</b> {cotizacion['fecha_vencimiento']}<br/>
+                <b>Ubicación:</b> {cotizacion['ubicacion']}<br/>
+                <b>IVA incluido:</b> {'Sí' if cotizacion['incluye_iva'] else 'No'}
+                """, header_style)
+            ]
+        ]
+        
+        cliente_table = Table(cliente_data, colWidths=[3.3*inch, 3.3*inch])
+        cliente_table.setStyle(TableStyle([
+            ('BOX', (0, 0), (-1, -1), 1, colors.black),
+            ('INNERGRID', (0, 0), (-1, -1), 1, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+        ]))
+        
+        story.append(cliente_table)
+        story.append(Spacer(1, 20))
+        
+        # TABLA DE PRODUCTOS
+        # Headers - mantenemos los 5 campos pero con mejor distribución
+        productos_headers = [
+            'Referencia', 'Descripción', 'Acabado', 'Cantidad', 'Precio Unitario', 'Total'
+        ]
+        
+        # Datos de productos
+        productos_data = [productos_headers]
+        
+        for item in cotizacion['items']:
+            productos_data.append([
+                item['referencia'],
+                # Reducir caracteres para que quepa mejor
+                item['descripcion'][:30] if len(item['descripcion']) > 30 else item['descripcion'],
+                # Acabado más corto
+                item['acabado'][:15] if len(item['acabado']) > 15 else item['acabado'],
+                str(item['cantidad']),
+                item['precio_unitario'],
+                item['total']
+            ])
+        
+        # Crear tabla de productos con anchos más conservadores
+        productos_table = Table(
+            productos_data, 
+            colWidths=[1.1*inch, 2.5*inch, 1.1*inch, 0.6*inch, 1*inch, 1*inch]
+        )
+        
+        productos_table.setStyle(TableStyle([
+            # Header
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 8),  # Fuente más pequeña
+            
+            # Datos - fuente más pequeña
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 7),  # Fuente más pequeña
+            ('ALIGN', (0, 1), (0, -1), 'CENTER'),  # Referencia centrada
+            ('ALIGN', (1, 1), (1, -1), 'LEFT'),    # Descripción a la izquierda
+            ('ALIGN', (2, 1), (2, -1), 'LEFT'),    # Acabado a la izquierda
+            ('ALIGN', (3, 1), (3, -1), 'CENTER'),  # Cantidad centrada
+            ('ALIGN', (4, 1), (-1, -1), 'RIGHT'),  # Precios a la derecha
+            
+            # Bordes
+            ('BOX', (0, 0), (-1, -1), 1, colors.black),
+            ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.black),
+            
+            # Padding reducido para ahorrar espacio
+            ('LEFTPADDING', (0, 0), (-1, -1), 4),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            
+            # Ajuste vertical para mejor distribución del texto
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        
+        story.append(productos_table)
+        story.append(Spacer(1, 20))
+        
+        # TOTALES - usar más ancho de página
+        totales_data = [
+            ['', 'Valor Subtotal:', cotizacion['resumen']['subtotal']],
+        ]
+        
+        if cotizacion['resumen']['descuento']:
+            totales_data.append(['', 'Descuento:', cotizacion['resumen']['descuento']])
+        
+        totales_data.append(['', 'Total:', cotizacion['resumen']['total']])
+        
+        totales_table = Table(totales_data, colWidths=[3.5*inch, 1.5*inch, 1.5*inch])
+        totales_table.setStyle(TableStyle([
+            ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+            ('FONTNAME', (1, 0), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (1, 0), (-1, -1), 9),  # Fuente más pequeña
+            ('BOX', (1, 0), (-1, -1), 1, colors.black),
+            ('INNERGRID', (1, 0), (-1, -1), 0.5, colors.black),
+            ('BACKGROUND', (1, -1), (-1, -1), colors.lightgrey),  # Destacar total
+            ('LEFTPADDING', (1, 0), (-1, -1), 6),  # Padding reducido
+            ('RIGHTPADDING', (1, 0), (-1, -1), 6),
+            ('TOPPADDING', (1, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (1, 0), (-1, -1), 6),
+        ]))
+        
+        story.append(totales_table)
+        story.append(Spacer(1, 30))
+        
+        # CONDICIONES GENERALES
+        if cotizacion.get('condiciones'):
+            story.append(Paragraph("<b>Condiciones Generales:</b>", 
+                                 ParagraphStyle('ConditionsTitle', parent=styles['Normal'], 
+                                              fontSize=10, fontName='Helvetica-Bold')))
+            story.append(Spacer(1, 8))
+            
+            for condicion in cotizacion['condiciones']:
+                story.append(Paragraph(f"• {condicion}", 
+                                     ParagraphStyle('Condition', parent=styles['Normal'], 
+                                                  fontSize=9, leftIndent=10)))
+            
+            story.append(Spacer(1, 20))
+        
+        # FIRMAS
+        firmas_data = [
+            ['Elaborado', 'Aprobado', 'Recibido'],
+            ['', '', ''],
+            ['', '', ''],
+            ['_________________', '_________________', '_________________']
+        ]
+        
+        firmas_table = Table(firmas_data, colWidths=[2.2*inch, 2.2*inch, 2.2*inch])
+        firmas_table.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),  # Fuente más pequeña
+            ('TOPPADDING', (0, 0), (-1, -1), 15),
+        ]))
+        
+        story.append(firmas_table)
+        
+        # Generar PDF
+        doc.build(story)
+        buffer.seek(0)
+        return buffer
+    
+    def obtener_condiciones_generales(self):
+        """Condiciones generales de la cotización"""
+        return [
+            'Los precios están sujetos a cambios sin previo aviso',
+            'La garantía aplica según las especificaciones del producto',
+            'Tiempos de entrega sujetos a disponibilidad',
+            'Se requiere 50% de anticipo para procesar el pedido'
+        ]
+    
+    def obtener_estadisticas(self):
+        """Obtener estadísticas del catálogo"""
+        if self.productos is None or self.productos.empty:
+            return None
+        
+        stats = {
+            'total_productos': len(self.productos),
+            'acabados_disponibles': self.productos['ACABADO DE LA MADERA'].dropna().unique().tolist(),
+            'usos_disponibles': self.productos['USO'].dropna().unique().tolist()
+        }
+        
+        # Estadísticas de precios por ubicación
+        for ubicacion, config in self.ubicaciones.items():
+            precios_sin_iva = self.productos[config['sin_iva']].dropna()
+            precios_con_iva = self.productos[config['con_iva']].dropna()
+            
+            if not precios_sin_iva.empty:
+                stats[f'precios_{ubicacion}'] = {
+                    'min_sin_iva': precios_sin_iva.min(),
+                    'max_sin_iva': precios_sin_iva.max(),
+                    'promedio_sin_iva': precios_sin_iva.mean(),
+                    'min_con_iva': precios_con_iva.min(),
+                    'max_con_iva': precios_con_iva.max(),
+                    'promedio_con_iva': precios_con_iva.mean()
+                }
+        
+        return stats
 
-# Pie de página
-st.markdown("<div class='footer'>Asistente Digital © 2025</div>", unsafe_allow_html=True)
+def main():
+    # Configuración de la página
+    st.set_page_config(
+        page_title="Cotizador de Productos de Madera",
+        page_icon="🪵",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+    
+    # Título principal
+    st.title("🪵 Cotizador de Productos de Madera")
+    st.markdown("---")
+    
+    # Inicializar el generador
+    if 'generador' not in st.session_state:
+        st.session_state.generador = GeneradorCotizacionesMadera()
+    
+    # Cargar archivo automáticamente
+    if 'catalogo_cargado' not in st.session_state:
+        st.session_state.catalogo_cargado = False
+    
+    if not st.session_state.catalogo_cargado:
+        with st.spinner('Cargando catálogo automáticamente...'):
+            resultado = st.session_state.generador.cargar_excel_automatico()
+            
+            if resultado['exito']:
+                st.success(f"✅ {resultado['mensaje']}")
+                st.session_state.catalogo_cargado = True
+            else:
+                st.error(f"❌ {resultado['mensaje']}")
+                st.warning("💡 Asegúrate de que el archivo 'GUION PARA IA LISTADO.xlsx' esté en el directorio de la aplicación.")
+                st.session_state.catalogo_cargado = False
+    
+    # Verificar si el catálogo está cargado
+    if not st.session_state.get('catalogo_cargado', False):
+        st.stop()
+    
+    # Sidebar para configuración
+    st.sidebar.header("⚙️ Configuración")
+    
+    # Estado del catálogo
+    st.sidebar.subheader("📊 Estado del Catálogo")
+    st.sidebar.success("✅ GUION PARA IA LISTADO.xlsx cargado")
+    if st.sidebar.button("🔄 Recargar Catálogo"):
+        resultado = st.session_state.generador.cargar_excel_automatico()
+        if resultado['exito']:
+            st.sidebar.success("✅ Catálogo recargado exitosamente")
+        else:
+            st.sidebar.error(f"❌ Error al recargar: {resultado['mensaje']}")
+    
+    # Configuración de búsqueda
+    st.sidebar.subheader("🔍 Configuración de Búsqueda")
+    ubicacion = st.sidebar.selectbox(
+        "Ubicación:",
+        options=['caldas', 'chagualo'],
+        format_func=lambda x: 'Caldas' if x == 'caldas' else 'Chagualo, Girardota, San Cristóbal'
+    )
+    
+    incluir_iva = st.sidebar.checkbox("Incluir IVA", value=True)
+    
+    # Área principal - Búsqueda
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("🔍 Buscar Productos")
+        termino_busqueda = st.text_input(
+            "Describe el producto que buscas:",
+            placeholder="Ej: mesa comedor, silla oficina, escritorio..."
+        )
+    
+    with col2:
+        st.subheader("📊 Estadísticas")
+        if st.button("Ver Estadísticas del Catálogo"):
+            stats = st.session_state.generador.obtener_estadisticas()
+            if stats:
+                st.metric("Total Productos", stats['total_productos'])
+                with st.expander("Ver más detalles"):
+                    st.write("**Acabados disponibles:**")
+                    st.write(", ".join(stats['acabados_disponibles'][:10]))
+                    st.write("**Usos disponibles:**")
+                    st.write(", ".join(stats['usos_disponibles'][:10]))
+    
+    # Realizar búsqueda
+    if termino_busqueda:
+        with st.spinner('Buscando productos...'):
+            resultados = st.session_state.generador.buscar_productos(
+                termino_busqueda, 
+                ubicacion=ubicacion, 
+                incluir_iva=incluir_iva,
+                limite=20
+            )
+        
+        if resultados['exito']:
+            st.subheader(f"📦 Productos encontrados ({resultados['total']})")
+            
+            # Mostrar productos en tarjetas
+            for i, producto in enumerate(resultados['resultados']):
+                with st.expander(f"🪵 {producto['descripcion']} - {producto['precio']}", expanded=i<3):
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        st.write(f"**Referencia:** {producto['referencia']}")
+                        st.write(f"**Acabado:** {producto['acabado']}")
+                        st.write(f"**Uso:** {producto['uso']}")
+                    
+                    with col2:
+                        st.write(f"**Garantía:** {producto['garantia']}")
+                        st.write(f"**Ubicación:** {producto['ubicacion'].title()}")
+                        st.write(f"**Precio:** {producto['precio']}")
+                    
+                    with col3:
+                        # Comparación de precios
+                        st.write("**Comparación de precios:**")
+                        st.write(f"Caldas s/IVA: {st.session_state.generador.formatear_precio(producto['precios']['caldas_sin_iva'])}")
+                        st.write(f"Caldas c/IVA: {st.session_state.generador.formatear_precio(producto['precios']['caldas_con_iva'])}")
+                        st.write(f"Chagualo s/IVA: {st.session_state.generador.formatear_precio(producto['precios']['chagualo_sin_iva'])}")
+                        st.write(f"Chagualo c/IVA: {st.session_state.generador.formatear_precio(producto['precios']['chagualo_con_iva'])}")
+                    
+                    # Botón para agregar a cotización
+                    cantidad = st.number_input(
+                        f"Cantidad para {producto['referencia']}:",
+                        min_value=1,
+                        value=1,
+                        key=f"cantidad_{i}"
+                    )
+                    
+                    if st.button(f"➕ Agregar a Cotización", key=f"agregar_{i}"):
+                        if 'productos_cotizacion' not in st.session_state:
+                            st.session_state.productos_cotizacion = []
+                        
+                        producto_con_cantidad = producto.copy()
+                        producto_con_cantidad['cantidad'] = cantidad
+                        st.session_state.productos_cotizacion.append(producto_con_cantidad)
+                        st.success(f"✅ {producto['descripcion']} agregado a la cotización")
+        else:
+            st.warning(f"⚠️ {resultados['mensaje']}")
+    
+    # Sección de cotización
+    if 'productos_cotizacion' in st.session_state and st.session_state.productos_cotizacion:
+        st.markdown("---")
+        st.subheader("📋 Cotización en Progreso")
+        
+        # Mostrar productos seleccionados
+        total_items = 0
+        for i, producto in enumerate(st.session_state.productos_cotizacion):
+            col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+            
+            with col1:
+                st.write(f"**{producto['descripcion']}**")
+                st.write(f"Ref: {producto['referencia']}")
+            
+            with col2:
+                st.write(f"Cantidad: {producto['cantidad']}")
+            
+            with col3:
+                st.write(f"Precio: {producto['precio']}")
+            
+            with col4:
+                if st.button("🗑️", key=f"eliminar_{i}"):
+                    st.session_state.productos_cotizacion.pop(i)
+                    st.experimental_rerun()
+            
+            total_items += producto['cantidad']
+        
+        st.write(f"**Total items:** {total_items}")
+        
+        # Formulario de cliente y opciones
+        st.subheader("👤 Datos del Cliente")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            nombre_cliente = st.text_input("Nombre completo:")
+            empresa_cliente = st.text_input("Empresa:")
+            email_cliente = st.text_input("Email:")
+        
+        with col2:
+            telefono_cliente = st.text_input("Teléfono:")
+            descuento = st.number_input("Descuento (%):", min_value=0, max_value=50, value=0)
+            validez_dias = st.number_input("Validez (días):", min_value=1, value=30)
+        
+        # Generar cotización
+        if st.button("📄 Generar Cotización", type="primary"):
+            if nombre_cliente:
+                datos_cliente = {
+                    'nombre': nombre_cliente,
+                    'empresa': empresa_cliente,
+                    'email': email_cliente,
+                    'telefono': telefono_cliente
+                }
+                
+                opciones = {
+                    'ubicacion': ubicacion,
+                    'incluir_iva': incluir_iva,
+                    'descuento': descuento,
+                    'validez_dias': validez_dias
+                }
+                
+                cotizacion = st.session_state.generador.generar_cotizacion(
+                    st.session_state.productos_cotizacion,
+                    datos_cliente,
+                    opciones
+                )
+                
+                # Mostrar cotización
+                st.success("✅ Cotización generada exitosamente!")
+                
+                # Guardar cotización en session_state para descargar PDF
+                st.session_state.ultima_cotizacion = cotizacion
+                
+                # Generar PDF automáticamente al crear cotización
+                try:
+                    datos_empresa_pdf = None
+                    if any(key.startswith('empresa_') for key in st.session_state.keys()):
+                        datos_empresa_pdf = {
+                            'nombre': st.session_state.get('empresa_nombre', 'Tu Empresa de Productos de Madera'),
+                            'nit': st.session_state.get('empresa_nit', '900.XXX.XXX-X'),
+                            'direccion': st.session_state.get('empresa_direccion', 'Calle XX # XX - XX'),
+                            'telefono': st.session_state.get('empresa_telefono', 'XXX-XXXX'),
+                            'ciudad': st.session_state.get('empresa_ciudad', 'Medellín'),
+                            'email': st.session_state.get('empresa_email', 'ventas@tuempresa.com')
+                        }
+                    
+                    pdf_buffer = st.session_state.generador.generar_pdf_cotizacion(cotizacion, datos_empresa_pdf)
+                    st.session_state.pdf_generado = pdf_buffer.getvalue()
+                    st.session_state.nombre_archivo_pdf = f"Cotizacion_{cotizacion['numero_cotizacion']}.pdf"
+                except Exception as e:
+                    st.error(f"Error al generar PDF: {str(e)}")
+                    st.session_state.pdf_generado = None
+                
+                # Botones de acción
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    # Botón de descarga directo
+                    if st.session_state.get('pdf_generado') is not None:
+                        st.download_button(
+                            label="📄 Descargar PDF",
+                            data=st.session_state.pdf_generado,
+                            file_name=st.session_state.nombre_archivo_pdf,
+                            mime="application/pdf",
+                            type="primary"
+                        )
+                    else:
+                        st.error("No se pudo generar el PDF")
+                
+                with col2:
+                    if st.button("🗑️ Nueva Cotización"):
+                        st.session_state.productos_cotizacion = []
+                        if 'pdf_generado' in st.session_state:
+                            del st.session_state.pdf_generado
+                        if 'ultima_cotizacion' in st.session_state:
+                            del st.session_state.ultima_cotizacion
+                        st.experimental_rerun()
+                
+                with col3:
+                    # Configurar datos de empresa para PDF
+                    if st.button("⚙️ Configurar Empresa"):
+                        st.session_state.mostrar_config_empresa = True
+                
+                # Configuración de empresa (modal)
+                if st.session_state.get('mostrar_config_empresa', False):
+                    st.markdown("---")
+                    st.subheader("🏢 Configuración de Empresa para PDF")
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        nombre_empresa = st.text_input("Nombre de la empresa:", 
+                                                     value=st.session_state.get('empresa_nombre', 'Tu Empresa de Productos de Madera'))
+                        nit_empresa = st.text_input("NIT:", 
+                                                   value=st.session_state.get('empresa_nit', '900.XXX.XXX-X'))
+                        direccion_empresa = st.text_input("Dirección:", 
+                                                         value=st.session_state.get('empresa_direccion', 'Calle XX # XX - XX'))
+                    
+                    with col2:
+                        telefono_empresa = st.text_input("Teléfono:", 
+                                                       value=st.session_state.get('empresa_telefono', 'XXX-XXXX'))
+                        ciudad_empresa = st.text_input("Ciudad:", 
+                                                     value=st.session_state.get('empresa_ciudad', 'Medellín'))
+                        email_empresa = st.text_input("Email:", 
+                                                    value=st.session_state.get('empresa_email', 'ventas@tuempresa.com'))
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        if st.button("💾 Guardar Configuración"):
+                            st.session_state.empresa_nombre = nombre_empresa
+                            st.session_state.empresa_nit = nit_empresa
+                            st.session_state.empresa_direccion = direccion_empresa
+                            st.session_state.empresa_telefono = telefono_empresa
+                            st.session_state.empresa_ciudad = ciudad_empresa
+                            st.session_state.empresa_email = email_empresa
+                            st.session_state.mostrar_config_empresa = False
+                            
+                            # Regenerar PDF con nuevos datos de empresa
+                            if 'ultima_cotizacion' in st.session_state:
+                                try:
+                                    datos_empresa_pdf = {
+                                        'nombre': nombre_empresa,
+                                        'nit': nit_empresa,
+                                        'direccion': direccion_empresa,
+                                        'telefono': telefono_empresa,
+                                        'ciudad': ciudad_empresa,
+                                        'email': email_empresa
+                                    }
+                                    pdf_buffer = st.session_state.generador.generar_pdf_cotizacion(
+                                        st.session_state.ultima_cotizacion, 
+                                        datos_empresa_pdf
+                                    )
+                                    st.session_state.pdf_generado = pdf_buffer.getvalue()
+                                except:
+                                    pass
+                            
+                            st.success("✅ Configuración guardada")
+                            st.experimental_rerun()
+                    
+                    with col2:
+                        if st.button("❌ Cancelar"):
+                            st.session_state.mostrar_config_empresa = False
+                            st.experimental_rerun()
+                    
+                    st.markdown("---")
+                
+                # Información de la cotización
+                st.subheader(f"📄 Cotización {cotizacion['numero_cotizacion']}")
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.write(f"**Fecha:** {cotizacion['fecha']}")
+                    st.write(f"**Vencimiento:** {cotizacion['fecha_vencimiento']}")
+                
+                with col2:
+                    st.write(f"**Cliente:** {cotizacion['cliente']['nombre']}")
+                    st.write(f"**Empresa:** {cotizacion['cliente']['empresa']}")
+                
+                with col3:
+                    st.write(f"**Ubicación:** {cotizacion['ubicacion']}")
+                    st.write(f"**IVA incluido:** {'Sí' if cotizacion['incluye_iva'] else 'No'}")
+                
+                # Detalles de productos
+                st.subheader("📦 Productos")
+                df_cotizacion = pd.DataFrame(cotizacion['items'])
+                st.dataframe(df_cotizacion[['referencia', 'descripcion', 'cantidad', 'precio_unitario', 'total']], use_container_width=True)
+                
+                # Resumen financiero
+                st.subheader("💰 Resumen")
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.metric("Subtotal", cotizacion['resumen']['subtotal'])
+                
+                with col2:
+                    if cotizacion['resumen']['descuento']:
+                        st.metric("Descuento", cotizacion['resumen']['descuento'])
+                
+                with col3:
+                    st.metric("TOTAL", cotizacion['resumen']['total'])
+                
+                # Condiciones
+                with st.expander("📋 Condiciones Generales"):
+                    for condicion in cotizacion['condiciones']:
+                        st.write(f"• {condicion}")
+                
+                # Botón para limpiar cotización
+                if st.button("🗑️ Limpiar Cotización", key="limpiar_final"):
+                    st.session_state.productos_cotizacion = []
+                    if 'pdf_generado' in st.session_state:
+                        del st.session_state.pdf_generado
+                    if 'ultima_cotizacion' in st.session_state:
+                        del st.session_state.ultima_cotizacion
+                    st.experimental_rerun()
+            else:
+                st.error("❌ Por favor, ingresa al menos el nombre del cliente.")
+
+if __name__ == "__main__":
+    main()
