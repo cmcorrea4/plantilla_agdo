@@ -14,6 +14,229 @@ from reportlab.pdfgen import canvas
 from reportlab.graphics.shapes import Drawing, Rect
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
+# CSS personalizado con colores Construinmuniza
+st.markdown("""
+<style>
+    /* Tema claro con colores Construinmuniza */
+    .stApp {
+        background-color: #FAFAFA;
+    }
+    
+    /* Título principal con branding Construinmuniza */
+    .main-title {
+        font-size: 3rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 2rem;
+        background: linear-gradient(135deg, #1B5E20, #FFC107);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    /* Botones con colores Construinmuniza */
+    .stButton > button {
+        background-color: #1B5E20;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    .stButton > button:hover {
+        background-color: #2E7D32;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(27, 94, 32, 0.3);
+    }
+    
+    /* Botones primarios */
+    .stButton > button[kind="primary"] {
+        background-color: #1B5E20;
+        color: white;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background-color: #2E7D32;
+    }
+    
+    /* Inputs y controles */
+    .stTextInput>div>div>input {
+        background-color: #FFFFFF;
+        color: #2C3E50;
+        border: 1px solid #C8E6C9;
+        border-radius: 8px;
+    }
+    .stTextInput>div>div>input:focus {
+        border-color: #1B5E20;
+        box-shadow: 0 0 0 2px rgba(27, 94, 32, 0.2);
+    }
+    
+    .stSelectbox>div>div>div {
+        background-color: #FFFFFF;
+        color: #2C3E50;
+        border: 1px solid #C8E6C9;
+        border-radius: 8px;
+    }
+    
+    .stNumberInput>div>div>input {
+        background-color: #FFFFFF;
+        color: #2C3E50;
+        border: 1px solid #C8E6C9;
+        border-radius: 8px;
+    }
+    
+    /* Sidebar con colores Construinmuniza */
+    section[data-testid="stSidebar"] {
+        background-color: #FFFFFF;
+        border-right: 1px solid #C8E6C9;
+    }
+    
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3 {
+        color: #1B5E20 !important;
+        font-weight: 600;
+    }
+    
+    /* Métricas */
+    .metric-container {
+        background-color: #F1F8E9;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid #C8E6C9;
+        text-align: center;
+    }
+    
+    /* Expanders con tema Construinmuniza */
+    .streamlit-expanderHeader {
+        background-color: #F1F8E9;
+        color: #1B5E20;
+        border: 1px solid #C8E6C9;
+        border-radius: 8px;
+        font-weight: 500;
+    }
+    
+    /* Success/Error/Info messages */
+    .stSuccess {
+        background-color: #E8F5E8;
+        color: #2E7D32;
+        border: 1px solid #A5D6A7;
+        border-radius: 8px;
+    }
+    
+    .stError {
+        background-color: #FFEBEE;
+        color: #C62828;
+        border: 1px solid #EF9A9A;
+        border-radius: 8px;
+    }
+    
+    .stWarning {
+        background-color: #FFF3C4;
+        color: #E65100;
+        border: 1px solid #FFE082;
+        border-radius: 8px;
+    }
+    
+    .stInfo {
+        background-color: #E3F2FD;
+        color: #1565C0;
+        border: 1px solid #90CAF9;
+        border-radius: 8px;
+    }
+    
+    /* DataFrames */
+    .stDataFrame {
+        border: 1px solid #C8E6C9;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    /* Spinners */
+    .stSpinner {
+        color: #1B5E20;
+    }
+    
+    /* Checkboxes */
+    .stCheckbox {
+        color: #2C3E50;
+    }
+    
+    /* Divisores */
+    hr {
+        border-color: #C8E6C9;
+    }
+    
+    /* Títulos de sección */
+    .section-header {
+        color: #1B5E20;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #C8E6C9;
+    }
+    
+    /* Cards de productos */
+    .product-card {
+        background-color: #FFFFFF;
+        border: 1px solid #C8E6C9;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(27, 94, 32, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .product-card:hover {
+        box-shadow: 0 4px 8px rgba(27, 94, 32, 0.2);
+        transform: translateY(-2px);
+    }
+    
+    /* Download button especial */
+    .download-button {
+        background: linear-gradient(135deg, #1B5E20, #2E7D32);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .download-button:hover {
+        background: linear-gradient(135deg, #2E7D32, #388E3C);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(27, 94, 32, 0.3);
+    }
+    
+    /* Subtítulos */
+    h1, h2, h3 {
+        color: #1B5E20;
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #F1F8E9;
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: #A5D6A7;
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: #81C784;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 class GeneradorCotizacionesMadera:
     def __init__(self):
         self.productos = None
@@ -224,10 +447,10 @@ class GeneradorCotizacionesMadera:
         """Generar número único de cotización"""
         fecha = datetime.now()
         timestamp = str(int(fecha.timestamp()))[-6:]
-        return f"COT-MAD-{fecha.strftime('%Y%m')}-{timestamp}"
+        return f"COT-CONST-{fecha.strftime('%Y%m')}-{timestamp}"
     
     def generar_pdf_cotizacion(self, cotizacion, datos_empresa=None):
-        """Generar PDF de la cotización con formato profesional"""
+        """Generar PDF de la cotización con formato profesional y colores Construinmuniza"""
         buffer = BytesIO()
         
         # Configuración de la página con márgenes equilibrados
@@ -240,13 +463,18 @@ class GeneradorCotizacionesMadera:
             bottomMargin=15*mm
         )
         
+        # Colores Construinmuniza
+        verde_construinmuniza = colors.Color(27/255, 94/255, 32/255)  # #1B5E20
+        verde_claro_construinmuniza = colors.Color(46/255, 125/255, 50/255)  # #2E7D32
+        amarillo_construinmuniza = colors.Color(255/255, 193/255, 7/255)  # #FFC107
+        
         # Estilos
         styles = getSampleStyleSheet()
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
             fontSize=16,
-            textColor=colors.black,
+            textColor=verde_construinmuniza,
             spaceAfter=12,
             alignment=TA_CENTER,
             fontName='Helvetica-Bold'
@@ -264,12 +492,12 @@ class GeneradorCotizacionesMadera:
         # Datos de empresa por defecto
         if datos_empresa is None:
             datos_empresa = {
-                'nombre': 'Tu Empresa de Productos de Madera',
+                'nombre': 'Construinmuniza',
                 'nit': '900.XXX.XXX-X',
                 'direccion': 'Calle XX # XX - XX',
                 'telefono': 'XXX-XXXX',
                 'ciudad': 'Medellín',
-                'email': 'ventas@tuempresa.com'
+                'email': 'ventas@construinmuniza.com'
             }
         
         # Contenido del PDF
@@ -280,6 +508,7 @@ class GeneradorCotizacionesMadera:
             [
                 Paragraph(f"""
                 <b>{datos_empresa['nombre']}</b><br/>
+                <font color='#2E7D32'>Madera Inmunizada</font><br/>
                 NIT: {datos_empresa['nit']}<br/>
                 {datos_empresa['direccion']}<br/>
                 Tel: {datos_empresa['telefono']}<br/>
@@ -292,7 +521,7 @@ class GeneradorCotizacionesMadera:
                     'HeaderRight',
                     parent=styles['Normal'],
                     fontSize=12,
-                    textColor=colors.black,
+                    textColor=verde_construinmuniza,
                     alignment=TA_CENTER,
                     fontName='Helvetica-Bold'
                 ))
@@ -303,8 +532,8 @@ class GeneradorCotizacionesMadera:
         header_table.setStyle(TableStyle([
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('BOX', (1, 0), (1, 0), 1.5, colors.black),
-            ('INNERGRID', (1, 0), (1, 0), 1.5, colors.black),
+            ('BOX', (1, 0), (1, 0), 1.5, verde_construinmuniza),
+            ('INNERGRID', (1, 0), (1, 0), 1.5, verde_construinmuniza),
             ('LEFTPADDING', (0, 0), (-1, -1), 8),
             ('RIGHTPADDING', (0, 0), (-1, -1), 8),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
@@ -315,7 +544,7 @@ class GeneradorCotizacionesMadera:
         story.append(Spacer(1, 20))
         
         # TÍTULO
-        story.append(Paragraph("COTIZACIÓN DE VENTAS", title_style))
+        story.append(Paragraph("COTIZACIÓN DE PRODUCTOS DE MADERA", title_style))
         story.append(Spacer(1, 15))
         
         # INFORMACIÓN DEL CLIENTE Y COTIZACIÓN
@@ -339,8 +568,8 @@ class GeneradorCotizacionesMadera:
         
         cliente_table = Table(cliente_data, colWidths=[3.3*inch, 3.3*inch])
         cliente_table.setStyle(TableStyle([
-            ('BOX', (0, 0), (-1, -1), 1, colors.black),
-            ('INNERGRID', (0, 0), (-1, -1), 1, colors.black),
+            ('BOX', (0, 0), (-1, -1), 1, verde_construinmuniza),
+            ('INNERGRID', (0, 0), (-1, -1), 1, verde_construinmuniza),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
             ('LEFTPADDING', (0, 0), (-1, -1), 10),
             ('RIGHTPADDING', (0, 0), (-1, -1), 10),
@@ -352,7 +581,6 @@ class GeneradorCotizacionesMadera:
         story.append(Spacer(1, 20))
         
         # TABLA DE PRODUCTOS
-        # Headers - mantenemos los 5 campos pero con mejor distribución
         productos_headers = [
             'Referencia', 'Descripción', 'Acabado', 'Cantidad', 'Precio Unitario', 'Total'
         ]
@@ -363,56 +591,52 @@ class GeneradorCotizacionesMadera:
         for item in cotizacion['items']:
             productos_data.append([
                 item['referencia'],
-                # Reducir caracteres para que quepa mejor
                 item['descripcion'][:30] if len(item['descripcion']) > 30 else item['descripcion'],
-                # Acabado más corto
                 item['acabado'][:15] if len(item['acabado']) > 15 else item['acabado'],
                 str(item['cantidad']),
                 item['precio_unitario'],
                 item['total']
             ])
         
-        # Crear tabla de productos con anchos más conservadores
+        # Crear tabla de productos
         productos_table = Table(
             productos_data, 
             colWidths=[1.1*inch, 2.5*inch, 1.1*inch, 0.6*inch, 1*inch, 1*inch]
         )
         
         productos_table.setStyle(TableStyle([
-            # Header
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            # Header con colores Construinmuniza
+            ('BACKGROUND', (0, 0), (-1, 0), verde_construinmuniza),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
             ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 8),  # Fuente más pequeña
+            ('FONTSIZE', (0, 0), (-1, 0), 8),
             
-            # Datos - fuente más pequeña
+            # Datos
             ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 7),  # Fuente más pequeña
-            ('ALIGN', (0, 1), (0, -1), 'CENTER'),  # Referencia centrada
-            ('ALIGN', (1, 1), (1, -1), 'LEFT'),    # Descripción a la izquierda
-            ('ALIGN', (2, 1), (2, -1), 'LEFT'),    # Acabado a la izquierda
-            ('ALIGN', (3, 1), (3, -1), 'CENTER'),  # Cantidad centrada
-            ('ALIGN', (4, 1), (-1, -1), 'RIGHT'),  # Precios a la derecha
+            ('FONTSIZE', (0, 1), (-1, -1), 7),
+            ('ALIGN', (0, 1), (0, -1), 'CENTER'),
+            ('ALIGN', (1, 1), (1, -1), 'LEFT'),
+            ('ALIGN', (2, 1), (2, -1), 'LEFT'),
+            ('ALIGN', (3, 1), (3, -1), 'CENTER'),
+            ('ALIGN', (4, 1), (-1, -1), 'RIGHT'),
             
             # Bordes
-            ('BOX', (0, 0), (-1, -1), 1, colors.black),
-            ('INNERGRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('BOX', (0, 0), (-1, -1), 1, verde_construinmuniza),
+            ('INNERGRID', (0, 0), (-1, -1), 0.5, verde_claro_construinmuniza),
             
-            # Padding reducido para ahorrar espacio
+            # Padding
             ('LEFTPADDING', (0, 0), (-1, -1), 4),
             ('RIGHTPADDING', (0, 0), (-1, -1), 4),
             ('TOPPADDING', (0, 0), (-1, -1), 4),
             ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-            
-            # Ajuste vertical para mejor distribución del texto
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ]))
         
         story.append(productos_table)
         story.append(Spacer(1, 20))
         
-        # TOTALES - usar más ancho de página
+        # TOTALES
         totales_data = [
             ['', 'Valor Subtotal:', cotizacion['resumen']['subtotal']],
         ]
@@ -426,11 +650,11 @@ class GeneradorCotizacionesMadera:
         totales_table.setStyle(TableStyle([
             ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
             ('FONTNAME', (1, 0), (-1, -1), 'Helvetica-Bold'),
-            ('FONTSIZE', (1, 0), (-1, -1), 9),  # Fuente más pequeña
-            ('BOX', (1, 0), (-1, -1), 1, colors.black),
-            ('INNERGRID', (1, 0), (-1, -1), 0.5, colors.black),
-            ('BACKGROUND', (1, -1), (-1, -1), colors.lightgrey),  # Destacar total
-            ('LEFTPADDING', (1, 0), (-1, -1), 6),  # Padding reducido
+            ('FONTSIZE', (1, 0), (-1, -1), 9),
+            ('BOX', (1, 0), (-1, -1), 1, verde_construinmuniza),
+            ('INNERGRID', (1, 0), (-1, -1), 0.5, verde_claro_construinmuniza),
+            ('BACKGROUND', (1, -1), (-1, -1), colors.Color(241/255, 248/255, 233/255)),  # Verde muy claro
+            ('LEFTPADDING', (1, 0), (-1, -1), 6),
             ('RIGHTPADDING', (1, 0), (-1, -1), 6),
             ('TOPPADDING', (1, 0), (-1, -1), 6),
             ('BOTTOMPADDING', (1, 0), (-1, -1), 6),
@@ -443,7 +667,8 @@ class GeneradorCotizacionesMadera:
         if cotizacion.get('condiciones'):
             story.append(Paragraph("<b>Condiciones Generales:</b>", 
                                  ParagraphStyle('ConditionsTitle', parent=styles['Normal'], 
-                                              fontSize=10, fontName='Helvetica-Bold')))
+                                              fontSize=10, fontName='Helvetica-Bold',
+                                              textColor=verde_construinmuniza)))
             story.append(Spacer(1, 8))
             
             for condicion in cotizacion['condiciones']:
@@ -465,7 +690,8 @@ class GeneradorCotizacionesMadera:
         firmas_table.setStyle(TableStyle([
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),  # Fuente más pequeña
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('TEXTCOLOR', (0, 0), (-1, 0), verde_construinmuniza),
             ('TOPPADDING', (0, 0), (-1, -1), 15),
         ]))
         
@@ -482,7 +708,8 @@ class GeneradorCotizacionesMadera:
             'Los precios están sujetos a cambios sin previo aviso',
             'La garantía aplica según las especificaciones del producto',
             'Tiempos de entrega sujetos a disponibilidad',
-            'Se requiere 50% de anticipo para procesar el pedido'
+            'Se requiere 50% de anticipo para procesar el pedido',
+            'Productos con garantía Construinmuniza'
         ]
     
     def obtener_estadisticas(self):
@@ -516,14 +743,15 @@ class GeneradorCotizacionesMadera:
 def main():
     # Configuración de la página
     st.set_page_config(
-        page_title="Cotizador de Productos de Madera",
-        page_icon="🪵",
+        page_title="Cotizador Construinmuniza",
+        page_icon="🌲",
         layout="wide",
         initial_sidebar_state="expanded"
     )
     
-    # Título principal
-    st.title("🪵 Cotizador de Productos de Madera")
+    # Título principal con branding Construinmuniza
+    st.markdown('<h1 class="main-title">🌲 Cotizador Construinmuniza</h1>', unsafe_allow_html=True)
+    st.markdown('<p style="text-align: center; color: #2E7D32; font-size: 1.2rem; margin-bottom: 2rem;">Madera Inmunizada de Calidad</p>', unsafe_allow_html=True)
     st.markdown("---")
     
     # Inicializar el generador
@@ -535,7 +763,7 @@ def main():
         st.session_state.catalogo_cargado = False
     
     if not st.session_state.catalogo_cargado:
-        with st.spinner('Cargando catálogo automáticamente...'):
+        with st.spinner('🔄 Cargando catálogo de productos...'):
             resultado = st.session_state.generador.cargar_excel_automatico()
             
             if resultado['exito']:
@@ -551,11 +779,11 @@ def main():
         st.stop()
     
     # Sidebar para configuración
-    st.sidebar.header("⚙️ Configuración")
+    st.sidebar.markdown("## ⚙️ Configuración")
     
     # Estado del catálogo
-    st.sidebar.subheader("📊 Estado del Catálogo")
-    st.sidebar.success("✅ GUION PARA IA LISTADO.xlsx cargado")
+    st.sidebar.markdown("### 📊 Estado del Catálogo")
+    st.sidebar.success("✅ Catálogo cargado correctamente")
     if st.sidebar.button("🔄 Recargar Catálogo"):
         resultado = st.session_state.generador.cargar_excel_automatico()
         if resultado['exito']:
@@ -564,40 +792,40 @@ def main():
             st.sidebar.error(f"❌ Error al recargar: {resultado['mensaje']}")
     
     # Configuración de búsqueda
-    st.sidebar.subheader("🔍 Configuración de Búsqueda")
+    st.sidebar.markdown("### 🔍 Configuración de Búsqueda")
     ubicacion = st.sidebar.selectbox(
-        "Ubicación:",
+        "📍 Ubicación:",
         options=['caldas', 'chagualo'],
         format_func=lambda x: 'Caldas' if x == 'caldas' else 'Chagualo, Girardota, San Cristóbal'
     )
     
-    incluir_iva = st.sidebar.checkbox("Incluir IVA", value=True)
+    incluir_iva = st.sidebar.checkbox("💰 Incluir IVA", value=True)
     
     # Área principal - Búsqueda
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.subheader("🔍 Buscar Productos")
+        st.markdown("### 🔍 Buscar Productos")
         termino_busqueda = st.text_input(
             "Describe el producto que buscas:",
-            placeholder="Ej: mesa comedor, silla oficina, escritorio..."
+            placeholder="Ej: mesa comedor, silla oficina, escritorio, piso, vigas..."
         )
     
     with col2:
-        st.subheader("📊 Estadísticas")
-        if st.button("Ver Estadísticas del Catálogo"):
+        st.markdown("### 📊 Estadísticas")
+        if st.button("📈 Ver Estadísticas del Catálogo"):
             stats = st.session_state.generador.obtener_estadisticas()
             if stats:
-                st.metric("Total Productos", stats['total_productos'])
-                with st.expander("Ver más detalles"):
-                    st.write("**Acabados disponibles:**")
+                st.markdown(f'<div class="metric-container"><h4>{stats["total_productos"]}</h4><p>Total Productos</p></div>', unsafe_allow_html=True)
+                with st.expander("📋 Ver más detalles"):
+                    st.write("**🎨 Acabados disponibles:**")
                     st.write(", ".join(stats['acabados_disponibles'][:10]))
-                    st.write("**Usos disponibles:**")
+                    st.write("**🏗️ Usos disponibles:**")
                     st.write(", ".join(stats['usos_disponibles'][:10]))
     
     # Realizar búsqueda
     if termino_busqueda:
-        with st.spinner('Buscando productos...'):
+        with st.spinner('🔍 Buscando productos...'):
             resultados = st.session_state.generador.buscar_productos(
                 termino_busqueda, 
                 ubicacion=ubicacion, 
@@ -606,54 +834,59 @@ def main():
             )
         
         if resultados['exito']:
-            st.subheader(f"📦 Productos encontrados ({resultados['total']})")
+            st.markdown(f"### 📦 Productos encontrados ({resultados['total']})")
             
             # Mostrar productos en tarjetas
             for i, producto in enumerate(resultados['resultados']):
-                with st.expander(f"🪵 {producto['descripcion']} - {producto['precio']}", expanded=i<3):
+                with st.expander(f"🌲 {producto['descripcion']} - {producto['precio']}", expanded=i<3):
                     col1, col2, col3 = st.columns(3)
                     
                     with col1:
-                        st.write(f"**Referencia:** {producto['referencia']}")
-                        st.write(f"**Acabado:** {producto['acabado']}")
-                        st.write(f"**Uso:** {producto['uso']}")
+                        st.write(f"**📋 Referencia:** {producto['referencia']}")
+                        st.write(f"**🎨 Acabado:** {producto['acabado']}")
+                        st.write(f"**🏗️ Uso:** {producto['uso']}")
                     
                     with col2:
-                        st.write(f"**Garantía:** {producto['garantia']}")
-                        st.write(f"**Ubicación:** {producto['ubicacion'].title()}")
-                        st.write(f"**Precio:** {producto['precio']}")
+                        st.write(f"**🛡️ Garantía:** {producto['garantia']}")
+                        st.write(f"**📍 Ubicación:** {producto['ubicacion'].title()}")
+                        st.write(f"**💰 Precio:** {producto['precio']}")
                     
                     with col3:
                         # Comparación de precios
-                        st.write("**Comparación de precios:**")
+                        st.write("**💲 Comparación de precios:**")
                         st.write(f"Caldas s/IVA: {st.session_state.generador.formatear_precio(producto['precios']['caldas_sin_iva'])}")
                         st.write(f"Caldas c/IVA: {st.session_state.generador.formatear_precio(producto['precios']['caldas_con_iva'])}")
                         st.write(f"Chagualo s/IVA: {st.session_state.generador.formatear_precio(producto['precios']['chagualo_sin_iva'])}")
                         st.write(f"Chagualo c/IVA: {st.session_state.generador.formatear_precio(producto['precios']['chagualo_con_iva'])}")
                     
                     # Botón para agregar a cotización
-                    cantidad = st.number_input(
-                        f"Cantidad para {producto['referencia']}:",
-                        min_value=1,
-                        value=1,
-                        key=f"cantidad_{i}"
-                    )
+                    col_qty, col_btn = st.columns([1, 2])
                     
-                    if st.button(f"➕ Agregar a Cotización", key=f"agregar_{i}"):
-                        if 'productos_cotizacion' not in st.session_state:
-                            st.session_state.productos_cotizacion = []
-                        
-                        producto_con_cantidad = producto.copy()
-                        producto_con_cantidad['cantidad'] = cantidad
-                        st.session_state.productos_cotizacion.append(producto_con_cantidad)
-                        st.success(f"✅ {producto['descripcion']} agregado a la cotización")
+                    with col_qty:
+                        cantidad = st.number_input(
+                            f"Cantidad:",
+                            min_value=1,
+                            value=1,
+                            key=f"cantidad_{i}"
+                        )
+                    
+                    with col_btn:
+                        st.markdown("<br>", unsafe_allow_html=True)
+                        if st.button(f"🛒 Agregar a Cotización", key=f"agregar_{i}"):
+                            if 'productos_cotizacion' not in st.session_state:
+                                st.session_state.productos_cotizacion = []
+                            
+                            producto_con_cantidad = producto.copy()
+                            producto_con_cantidad['cantidad'] = cantidad
+                            st.session_state.productos_cotizacion.append(producto_con_cantidad)
+                            st.success(f"✅ {producto['descripcion']} agregado a la cotización")
         else:
             st.warning(f"⚠️ {resultados['mensaje']}")
     
     # Sección de cotización
     if 'productos_cotizacion' in st.session_state and st.session_state.productos_cotizacion:
         st.markdown("---")
-        st.subheader("📋 Cotización en Progreso")
+        st.markdown("### 📋 Cotización en Progreso")
         
         # Mostrar productos seleccionados
         total_items = 0
@@ -661,41 +894,42 @@ def main():
             col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
             
             with col1:
-                st.write(f"**{producto['descripcion']}**")
-                st.write(f"Ref: {producto['referencia']}")
+                st.write(f"**🌲 {producto['descripcion']}**")
+                st.write(f"📋 Ref: {producto['referencia']}")
             
             with col2:
-                st.write(f"Cantidad: {producto['cantidad']}")
+                st.write(f"📦 Cantidad: {producto['cantidad']}")
             
             with col3:
-                st.write(f"Precio: {producto['precio']}")
+                st.write(f"💰 Precio: {producto['precio']}")
             
             with col4:
-                if st.button("🗑️", key=f"eliminar_{i}"):
+                if st.button("🗑️ Eliminar", key=f"eliminar_{i}"):
                     st.session_state.productos_cotizacion.pop(i)
                     st.rerun()
             
             total_items += producto['cantidad']
         
-        st.write(f"**Total items:** {total_items}")
+        st.info(f"📊 **Total items:** {total_items}")
         
         # Formulario de cliente y opciones
-        st.subheader("👤 Datos del Cliente")
+        st.markdown("### 👤 Datos del Cliente")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            nombre_cliente = st.text_input("Nombre completo:")
-            empresa_cliente = st.text_input("Empresa:")
-            email_cliente = st.text_input("Email:")
+            nombre_cliente = st.text_input("👤 Nombre completo:")
+            empresa_cliente = st.text_input("🏢 Empresa:")
+            email_cliente = st.text_input("📧 Email:")
         
         with col2:
-            telefono_cliente = st.text_input("Teléfono:")
-            descuento = st.number_input("Descuento (%):", min_value=0, max_value=50, value=0)
-            validez_dias = st.number_input("Validez (días):", min_value=1, value=30)
+            telefono_cliente = st.text_input("📱 Teléfono:")
+            descuento = st.number_input("💸 Descuento (%):", min_value=0, max_value=50, value=0)
+            validez_dias = st.number_input("📅 Validez (días):", min_value=1, value=30)
         
         # Generar cotización
-        if st.button("📄 Generar Cotización", type="primary"):
+        st.markdown("---")
+        if st.button("📄 Generar Cotización", type="primary", use_container_width=True):
             if nombre_cliente:
                 datos_cliente = {
                     'nombre': nombre_cliente,
@@ -728,19 +962,19 @@ def main():
                     datos_empresa_pdf = None
                     if any(key.startswith('empresa_') for key in st.session_state.keys()):
                         datos_empresa_pdf = {
-                            'nombre': st.session_state.get('empresa_nombre', 'Tu Empresa de Productos de Madera'),
+                            'nombre': st.session_state.get('empresa_nombre', 'Construinmuniza'),
                             'nit': st.session_state.get('empresa_nit', '900.XXX.XXX-X'),
                             'direccion': st.session_state.get('empresa_direccion', 'Calle XX # XX - XX'),
                             'telefono': st.session_state.get('empresa_telefono', 'XXX-XXXX'),
                             'ciudad': st.session_state.get('empresa_ciudad', 'Medellín'),
-                            'email': st.session_state.get('empresa_email', 'ventas@tuempresa.com')
+                            'email': st.session_state.get('empresa_email', 'ventas@construinmuniza.com')
                         }
                     
                     pdf_buffer = st.session_state.generador.generar_pdf_cotizacion(cotizacion, datos_empresa_pdf)
                     st.session_state.pdf_generado = pdf_buffer.getvalue()
-                    st.session_state.nombre_archivo_pdf = f"Cotizacion_{cotizacion['numero_cotizacion']}.pdf"
+                    st.session_state.nombre_archivo_pdf = f"Cotizacion_Construinmuniza_{cotizacion['numero_cotizacion']}.pdf"
                 except Exception as e:
-                    st.error(f"Error al generar PDF: {str(e)}")
+                    st.error(f"❌ Error al generar PDF: {str(e)}")
                     st.session_state.pdf_generado = None
                 
                 # Botones de acción
@@ -754,52 +988,53 @@ def main():
                             data=st.session_state.pdf_generado,
                             file_name=st.session_state.nombre_archivo_pdf,
                             mime="application/pdf",
-                            type="primary"
+                            type="primary",
+                            use_container_width=True
                         )
                     else:
-                        st.error("No se pudo generar el PDF")
+                        st.error("❌ No se pudo generar el PDF")
                 
                 with col2:
-                    if st.button("🗑️ Nueva Cotización"):
+                    if st.button("🆕 Nueva Cotización", use_container_width=True):
                         st.session_state.productos_cotizacion = []
                         if 'pdf_generado' in st.session_state:
                             del st.session_state.pdf_generado
                         if 'ultima_cotizacion' in st.session_state:
                             del st.session_state.ultima_cotizacion
-                        st.experimental_rerun()
+                        st.rerun()
                 
                 with col3:
                     # Configurar datos de empresa para PDF
-                    if st.button("⚙️ Configurar Empresa"):
+                    if st.button("⚙️ Configurar Empresa", use_container_width=True):
                         st.session_state.mostrar_config_empresa = True
                 
                 # Configuración de empresa (modal)
                 if st.session_state.get('mostrar_config_empresa', False):
                     st.markdown("---")
-                    st.subheader("🏢 Configuración de Empresa para PDF")
+                    st.markdown("### 🏢 Configuración de Empresa para PDF")
                     
                     col1, col2 = st.columns(2)
                     
                     with col1:
-                        nombre_empresa = st.text_input("Nombre de la empresa:", 
-                                                     value=st.session_state.get('empresa_nombre', 'Tu Empresa de Productos de Madera'))
-                        nit_empresa = st.text_input("NIT:", 
+                        nombre_empresa = st.text_input("🏢 Nombre de la empresa:", 
+                                                     value=st.session_state.get('empresa_nombre', 'Construinmuniza'))
+                        nit_empresa = st.text_input("📄 NIT:", 
                                                    value=st.session_state.get('empresa_nit', '900.XXX.XXX-X'))
-                        direccion_empresa = st.text_input("Dirección:", 
+                        direccion_empresa = st.text_input("📍 Dirección:", 
                                                          value=st.session_state.get('empresa_direccion', 'Calle XX # XX - XX'))
                     
                     with col2:
-                        telefono_empresa = st.text_input("Teléfono:", 
+                        telefono_empresa = st.text_input("📱 Teléfono:", 
                                                        value=st.session_state.get('empresa_telefono', 'XXX-XXXX'))
-                        ciudad_empresa = st.text_input("Ciudad:", 
+                        ciudad_empresa = st.text_input("🏙️ Ciudad:", 
                                                      value=st.session_state.get('empresa_ciudad', 'Medellín'))
-                        email_empresa = st.text_input("Email:", 
-                                                    value=st.session_state.get('empresa_email', 'ventas@tuempresa.com'))
+                        email_empresa = st.text_input("📧 Email:", 
+                                                    value=st.session_state.get('empresa_email', 'ventas@construinmuniza.com'))
                     
                     col1, col2 = st.columns(2)
                     
                     with col1:
-                        if st.button("💾 Guardar Configuración"):
+                        if st.button("💾 Guardar Configuración", use_container_width=True):
                             st.session_state.empresa_nombre = nombre_empresa
                             st.session_state.empresa_nit = nit_empresa
                             st.session_state.empresa_direccion = direccion_empresa
@@ -828,63 +1063,69 @@ def main():
                                     pass
                             
                             st.success("✅ Configuración guardada")
-                            st.experimental_rerun()
+                            st.rerun()
                     
                     with col2:
-                        if st.button("❌ Cancelar"):
+                        if st.button("❌ Cancelar", use_container_width=True):
                             st.session_state.mostrar_config_empresa = False
-                            st.experimental_rerun()
+                            st.rerun()
                     
                     st.markdown("---")
                 
                 # Información de la cotización
-                st.subheader(f"📄 Cotización {cotizacion['numero_cotizacion']}")
+                st.markdown(f"### 📄 Cotización {cotizacion['numero_cotizacion']}")
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.write(f"**Fecha:** {cotizacion['fecha']}")
-                    st.write(f"**Vencimiento:** {cotizacion['fecha_vencimiento']}")
+                    st.info(f"**📅 Fecha:** {cotizacion['fecha']}\n\n**⏰ Vencimiento:** {cotizacion['fecha_vencimiento']}")
                 
                 with col2:
-                    st.write(f"**Cliente:** {cotizacion['cliente']['nombre']}")
-                    st.write(f"**Empresa:** {cotizacion['cliente']['empresa']}")
+                    st.info(f"**👤 Cliente:** {cotizacion['cliente']['nombre']}\n\n**🏢 Empresa:** {cotizacion['cliente']['empresa']}")
                 
                 with col3:
-                    st.write(f"**Ubicación:** {cotizacion['ubicacion']}")
-                    st.write(f"**IVA incluido:** {'Sí' if cotizacion['incluye_iva'] else 'No'}")
+                    st.info(f"**📍 Ubicación:** {cotizacion['ubicacion']}\n\n**💰 IVA incluido:** {'Sí' if cotizacion['incluye_iva'] else 'No'}")
                 
                 # Detalles de productos
-                st.subheader("📦 Productos")
+                st.markdown("### 📦 Productos Cotizados")
                 df_cotizacion = pd.DataFrame(cotizacion['items'])
-                st.dataframe(df_cotizacion[['referencia', 'descripcion', 'cantidad', 'precio_unitario', 'total']], use_container_width=True)
+                st.dataframe(df_cotizacion[['referencia', 'descripcion', 'cantidad', 'precio_unitario', 'total']], 
+                           use_container_width=True,
+                           column_config={
+                               "referencia": "📋 Referencia",
+                               "descripcion": "🌲 Descripción",
+                               "cantidad": "📦 Cantidad",
+                               "precio_unitario": "💰 Precio Unitario",
+                               "total": "💵 Total"
+                           })
                 
                 # Resumen financiero
-                st.subheader("💰 Resumen")
+                st.markdown("### 💰 Resumen Financiero")
                 col1, col2, col3 = st.columns(3)
                 
                 with col1:
-                    st.metric("Subtotal", cotizacion['resumen']['subtotal'])
+                    st.markdown(f'<div class="metric-container"><h3>{cotizacion["resumen"]["subtotal"]}</h3><p>Subtotal</p></div>', unsafe_allow_html=True)
                 
                 with col2:
                     if cotizacion['resumen']['descuento']:
-                        st.metric("Descuento", cotizacion['resumen']['descuento'])
+                        st.markdown(f'<div class="metric-container"><h3>{cotizacion["resumen"]["descuento"]}</h3><p>Descuento</p></div>', unsafe_allow_html=True)
                 
                 with col3:
-                    st.metric("TOTAL", cotizacion['resumen']['total'])
+                    st.markdown(f'<div class="metric-container" style="background-color: #E8F5E8; border: 2px solid #1B5E20;"><h2 style="color: #1B5E20;">{cotizacion["resumen"]["total"]}</h2><p><strong>TOTAL</strong></p></div>', unsafe_allow_html=True)
                 
                 # Condiciones
-                with st.expander("📋 Condiciones Generales"):
+                with st.expander("📋 Condiciones Generales de Construinmuniza"):
                     for condicion in cotizacion['condiciones']:
-                        st.write(f"• {condicion}")
+                        st.write(f"🔸 {condicion}")
                 
                 # Botón para limpiar cotización
-                if st.button("🗑️ Limpiar Cotización", key="limpiar_final"):
+                st.markdown("---")
+                if st.button("🗑️ Limpiar Cotización Completa", key="limpiar_final"):
                     st.session_state.productos_cotizacion = []
                     if 'pdf_generado' in st.session_state:
                         del st.session_state.pdf_generado
                     if 'ultima_cotizacion' in st.session_state:
                         del st.session_state.ultima_cotizacion
-                    st.experimental_rerun()
+                    st.rerun()
             else:
                 st.error("❌ Por favor, ingresa al menos el nombre del cliente.")
 
