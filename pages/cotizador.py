@@ -673,7 +673,7 @@ def main():
             with col4:
                 if st.button("🗑️", key=f"eliminar_{i}"):
                     st.session_state.productos_cotizacion.pop(i)
-                    st.experimental_rerun()
+                    st.rerun()
             
             total_items += producto['cantidad']
         
