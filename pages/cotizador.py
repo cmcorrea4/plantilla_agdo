@@ -795,7 +795,7 @@ def main():
     if not os.path.exists("logo.png"):
         st.warning("⚠️ Archivo 'logo.png' no encontrado. El PDF usará el número de cotización en lugar del logo.")
     else:
-        st.success("✅ Logo encontrado. Se usará en las cotizaciones PDF.")
+    #    st.success("✅ Logo encontrado. Se usará en las cotizaciones PDF.")
     
     # Inicializar el generador
     if 'generador' not in st.session_state:
