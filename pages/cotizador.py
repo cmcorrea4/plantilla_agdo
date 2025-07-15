@@ -429,9 +429,9 @@ class GeneradorCotizacionesMadera:
             # Datos
             ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
             ('FONTSIZE', (0, 1), (-1, -1), 7),
-            ('ALIGN', (0, 1), (0, -1), 'CENTER'),
+            ('ALIGN', (0, 1), (0, -1), 'CENTER'),  # Referencia centrada
             ('ALIGN', (1, 1), (1, -1), 'LEFT'),
-            ('ALIGN', (2, 1), (2, -1), 'LEFT'),
+            ('ALIGN', (2, 1), (2, -1), 'CENTER'),  # Acabado centrado
             ('ALIGN', (3, 1), (3, -1), 'CENTER'),
             ('ALIGN', (4, 1), (-1, -1), 'RIGHT'),
             
