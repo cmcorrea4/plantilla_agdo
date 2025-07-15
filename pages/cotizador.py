@@ -13,6 +13,7 @@ from reportlab.lib.units import inch, mm
 from reportlab.pdfgen import canvas
 from reportlab.graphics.shapes import Drawing, Rect
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+
 class GeneradorCotizacionesMadera:
     def __init__(self):
         self.productos = None
@@ -279,18 +280,18 @@ class GeneradorCotizacionesMadera:
         # Contenido del PDF
         story = []
         
-        # HEADER DE LA EMPRESA
-        header_data = [
-            [
-                Paragraph(f"""
-                <b>{datos_empresa['nombre']}</b><br/>
-                <font color='#2E7D32'>Madera Inmunizada</font><br/>
-                NIT: {datos_empresa['nit']}<br/>
-                {datos_empresa['direccion']}<br/>
-                Tel: {datos_empresa['telefono']}<br/>
-                {datos_empresa['ciudad']}
-                """, header_style),
-                Paragraph(f"""
+        # HEADER DE LA EMPRESA CON LOGO
+        # Verificar si existe el archivo del logo
+        logo_element = None
+        logo_path = "logo.png"
+        
+        if os.path.exists(logo_path):
+            try:
+                # Crear elemento de imagen con tamaño apropiado
+                logo_element = Image(logo_path, width=80, height=80)
+            except Exception as e:
+                # Si hay error al cargar la imagen, usar texto alternativo
+                logo_element = Paragraph(f"""
                 <b>COTIZACIÓN</b><br/>
                 No. {cotizacion['numero_cotizacion']}
                 """, ParagraphStyle(
@@ -301,15 +302,39 @@ class GeneradorCotizacionesMadera:
                     alignment=TA_CENTER,
                     fontName='Helvetica-Bold'
                 ))
+        else:
+            # Si no existe el logo, usar texto alternativo
+            logo_element = Paragraph(f"""
+            <b>COTIZACIÓN</b><br/>
+            No. {cotizacion['numero_cotizacion']}
+            """, ParagraphStyle(
+                'HeaderRight',
+                parent=styles['Normal'],
+                fontSize=12,
+                textColor=verde_construinmuniza,
+                alignment=TA_CENTER,
+                fontName='Helvetica-Bold'
+            ))
+        
+        header_data = [
+            [
+                Paragraph(f"""
+                <b>{datos_empresa['nombre']}</b><br/>
+                <font color='#2E7D32'>Madera Inmunizada</font><br/>
+                NIT: {datos_empresa['nit']}<br/>
+                {datos_empresa['direccion']}<br/>
+                Tel: {datos_empresa['telefono']}<br/>
+                {datos_empresa['ciudad']}
+                """, header_style),
+                logo_element
             ]
         ]
         
         header_table = Table(header_data, colWidths=[4.2*inch, 2.5*inch])
         header_table.setStyle(TableStyle([
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('ALIGN', (0, 0), (0, 0), 'LEFT'),
+            ('ALIGN', (1, 0), (1, 0), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('BOX', (1, 0), (1, 0), 1.5, verde_construinmuniza),
-            ('INNERGRID', (1, 0), (1, 0), 1.5, verde_construinmuniza),
             ('LEFTPADDING', (0, 0), (-1, -1), 8),
             ('RIGHTPADDING', (0, 0), (-1, -1), 8),
             ('TOPPADDING', (0, 0), (-1, -1), 8),
@@ -318,6 +343,19 @@ class GeneradorCotizacionesMadera:
         
         story.append(header_table)
         story.append(Spacer(1, 20))
+        
+        # NÚMERO DE COTIZACIÓN DEBAJO DEL HEADER
+        cotizacion_number = Paragraph(f"<b>COTIZACIÓN No. {cotizacion['numero_cotizacion']}</b>", 
+                                    ParagraphStyle(
+                                        'CotizacionNumber',
+                                        parent=styles['Normal'],
+                                        fontSize=14,
+                                        textColor=verde_construinmuniza,
+                                        alignment=TA_CENTER,
+                                        fontName='Helvetica-Bold',
+                                        spaceAfter=15
+                                    ))
+        story.append(cotizacion_number)
         
         # TÍTULO
         story.append(Paragraph("PRECOTIZACIÓN CONSTRUINMUNIZA", title_style))
@@ -752,6 +790,12 @@ def main():
     st.markdown('<h1 class="main-title">🌲 Cotizador Construinmuniza</h1>', unsafe_allow_html=True)
     st.markdown('<p style="text-align: center; color: #2E7D32; font-size: 1.2rem; margin-bottom: 2rem;">Madera Inmunizada de Calidad</p>', unsafe_allow_html=True)
     st.markdown("---")
+    
+    # Verificar si existe el archivo logo.png
+    if not os.path.exists("logo.png"):
+        st.warning("⚠️ Archivo 'logo.png' no encontrado. El PDF usará el número de cotización en lugar del logo.")
+    else:
+        st.success("✅ Logo encontrado. Se usará en las cotizaciones PDF.")
     
     # Inicializar el generador
     if 'generador' not in st.session_state:
