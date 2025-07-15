@@ -807,7 +807,7 @@ def main():
         st.markdown("### 🔍 Buscar Productos")
         termino_busqueda = st.text_input(
             "Describe el producto que buscas:",
-            placeholder="Ej: tabla, piso pared, estacón, alfarda, rústico..."
+            placeholder="Ej: tabla, piso,vareta, estacón, alfarda, rústico..."
         )
     
     with col2:
