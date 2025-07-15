@@ -415,7 +415,7 @@ class GeneradorCotizacionesMadera:
         # Crear tabla de productos
         productos_table = Table(
             productos_data, 
-            colWidths=[1.5*inch, 2.1*inch, 1.0*inch, 0.6*inch, 1.0*inch, 1.0*inch]
+            colWidths=[1.8*inch, 1.8*inch, 1.0*inch, 0.6*inch, 1.0*inch, 1.0*inch]
         )
         
         productos_table.setStyle(TableStyle([
@@ -791,11 +791,7 @@ def main():
     st.markdown('<p style="text-align: center; color: #2E7D32; font-size: 1.2rem; margin-bottom: 2rem;">Madera Inmunizada de Calidad</p>', unsafe_allow_html=True)
     st.markdown("---")
     
-    # Verificar si existe el archivo logo.png
-    if not os.path.exists("logo.png"):
-        st.warning("⚠️ Archivo 'logo.png' no encontrado. El PDF usará el número de cotización en lugar del logo.")
-    else:
-        st.success("✅ Logo encontrado. Se usará en las cotizaciones PDF.")
+
     
     # Inicializar el generador
     if 'generador' not in st.session_state:
@@ -810,7 +806,6 @@ def main():
             resultado = st.session_state.generador.cargar_excel_automatico()
             
             if resultado['exito']:
-                st.success(f"✅ {resultado['mensaje']}")
                 st.session_state.catalogo_cargado = True
             else:
                 st.error(f"❌ {resultado['mensaje']}")
@@ -826,7 +821,6 @@ def main():
     
     # Estado del catálogo
     st.sidebar.markdown("### 📊 Estado del Catálogo")
-    st.sidebar.success("✅ Catálogo cargado correctamente")
     if st.sidebar.button("🔄 Recargar Catálogo"):
         resultado = st.session_state.generador.cargar_excel_automatico()
         if resultado['exito']:
@@ -845,26 +839,11 @@ def main():
     incluir_iva = st.sidebar.checkbox("💰 Incluir IVA", value=True)
     
     # Área principal - Búsqueda
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.markdown("### 🔍 Buscar Productos")
-        termino_busqueda = st.text_input(
-            "Describe el producto que buscas:",
-            placeholder="Ej: tabla, piso,vareta, estacón, alfarda, rústico..."
-        )
-    
-    with col2:
-        st.markdown("### 📊 Estadísticas")
-        if st.button("📈 Ver Estadísticas del Catálogo"):
-            stats = st.session_state.generador.obtener_estadisticas()
-            if stats:
-                st.markdown(f'<div class="metric-container"><h4>{stats["total_productos"]}</h4><p>Total Productos</p></div>', unsafe_allow_html=True)
-                with st.expander("📋 Ver más detalles"):
-                    st.write("**🎨 Acabados disponibles:**")
-                    st.write(", ".join(stats['acabados_disponibles'][:10]))
-                    st.write("**🏗️ Usos disponibles:**")
-                    st.write(", ".join(stats['usos_disponibles'][:10]))
+    st.markdown("### 🔍 Buscar Productos")
+    termino_busqueda = st.text_input(
+        "Describe el producto que buscas:",
+        placeholder="Ej: tabla, piso,vareta, estacón, alfarda, rústico..."
+    )
     
     # Realizar búsqueda
     if termino_busqueda:
