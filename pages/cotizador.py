@@ -792,9 +792,9 @@ def main():
     st.markdown("---")
     
     # Verificar si existe el archivo logo.png
-    if not os.path.exists("logo.png"):
-        st.warning("⚠️ Archivo 'logo.png' no encontrado. El PDF usará el número de cotización en lugar del logo.")
-    else:
+    #if not os.path.exists("logo.png"):
+    #    st.warning("⚠️ Archivo 'logo.png' no encontrado. El PDF usará el número de cotización en lugar del logo.")
+    #else:
     #    st.success("✅ Logo encontrado. Se usará en las cotizaciones PDF.")
     
     # Inicializar el generador
