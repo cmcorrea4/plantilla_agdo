@@ -415,7 +415,7 @@ class GeneradorCotizacionesMadera:
         # Crear tabla de productos
         productos_table = Table(
             productos_data, 
-            colWidths=[1.1*inch, 2.5*inch, 1.1*inch, 0.6*inch, 1*inch, 1*inch]
+            colWidths=[1.4*inch, 2.2*inch, 1.0*inch, 0.6*inch, 1.0*inch, 1.0*inch]
         )
         
         productos_table.setStyle(TableStyle([
@@ -792,10 +792,10 @@ def main():
     st.markdown("---")
     
     # Verificar si existe el archivo logo.png
-    #if not os.path.exists("logo.png"):
-    #    st.warning("⚠️ Archivo 'logo.png' no encontrado. El PDF usará el número de cotización en lugar del logo.")
-    #else:
-    #    st.success("✅ Logo encontrado. Se usará en las cotizaciones PDF.")
+    if not os.path.exists("logo.png"):
+        st.warning("⚠️ Archivo 'logo.png' no encontrado. El PDF usará el número de cotización en lugar del logo.")
+    else:
+        st.success("✅ Logo encontrado. Se usará en las cotizaciones PDF.")
     
     # Inicializar el generador
     if 'generador' not in st.session_state:
