@@ -855,16 +855,16 @@ def main():
         )
     
     with col2:
-        #st.markdown("### 📊 Estadísticas")
-        #if st.button("📈 Ver Estadísticas del Catálogo"):
-        #    stats = st.session_state.generador.obtener_estadisticas()
-        #    if stats:
-        #        st.markdown(f'<div class="metric-container"><h4>{stats["total_productos"]}</h4><p>Total Productos</p></div>', unsafe_allow_html=True)
-        #        with st.expander("📋 Ver más detalles"):
-        #            st.write("**🎨 Acabados disponibles:**")
-        #            st.write(", ".join(stats['acabados_disponibles'][:10]))
-        #            st.write("**🏗️ Usos disponibles:**")
-        #            st.write(", ".join(stats['usos_disponibles'][:10]))
+        st.markdown("### 📊 Estadísticas")
+        if st.button("📈 Ver Estadísticas del Catálogo"):
+            stats = st.session_state.generador.obtener_estadisticas()
+            if stats:
+                st.markdown(f'<div class="metric-container"><h4>{stats["total_productos"]}</h4><p>Total Productos</p></div>', unsafe_allow_html=True)
+                with st.expander("📋 Ver más detalles"):
+                    st.write("**🎨 Acabados disponibles:**")
+                    st.write(", ".join(stats['acabados_disponibles'][:10]))
+                    st.write("**🏗️ Usos disponibles:**")
+                    st.write(", ".join(stats['usos_disponibles'][:10]))
     
     # Realizar búsqueda
     if termino_busqueda:
