@@ -320,7 +320,7 @@ class GeneradorCotizacionesMadera:
         story.append(Spacer(1, 20))
         
         # TÍTULO
-        story.append(Paragraph("COTIZACIÓN DE PRODUCTOS DE MADERA", title_style))
+        story.append(Paragraph("PRECOTIZACIÓN CONSTRUINMUNIZA", title_style))
         story.append(Spacer(1, 15))
         
         # INFORMACIÓN DEL CLIENTE Y COTIZACIÓN
