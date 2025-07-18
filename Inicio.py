@@ -353,7 +353,7 @@ st.markdown("""
             <span style="font-weight: 500;">📦 ¿Puedes darme la disponibilidad de inventario de la referencia RE40009250?</span>
         </li>
         <li style="margin-bottom: 0.8rem; padding: 1rem; border-radius: 8px; border-left: 4px solid #3498DB;">
-            <span style="font-weight: 500;">💰 ¿Puedes darme el precio de PISO PARED 10X1.7X100M2 CEP en El Chagualo?</span>
+            <span style="font-weight: 500;">💰 ¿Puedes decirme que es una alfarda?</span>
         </li>
     </ul>
 </div>
